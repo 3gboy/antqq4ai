@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML 渲染工具</title>
+    <!-- 引入 Tailwind CSS 以实现现代化设计 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Inter 字体以优化文本显示 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        /* 添加一个简单的过渡效果 */
+        #placeholder, #render-output {
+            transition: opacity 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
+
+    <div class="w-full max-w-5xl mx-auto">
+        <!-- 上传区域 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6 text-center border border-gray-200 dark:border-gray-700">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">HTML 渲染工具</h1>
+            <p class="text-gray-600 dark:text-gray-300 mt-2">上传一个 HTML 文件，我们会在这里为你实时渲染出来。</p>
+            <div class="mt-5">
+                <!-- 自定义上传按钮 -->
+                <label for="html-uploader" class="cursor-pointer inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105 duration-300">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    选择 HTML 文件
+                </label>
+                <input type="file" id="html-uploader" class="hidden" accept=".html,.htm">
+            </div>
+             <p id="file-name" class="text-sm text-gray-500 dark:text-gray-400 mt-3 h-5"></p>
+        </div>
+
+        <!-- 渲染输出区域 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full h-[65vh] overflow-hidden border border-gray-200 dark:border-gray-700 relative">
+             <!-- 占位符 -->
+             <div id="placeholder" class="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
+                <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                <p class="ml-4 text-lg mt-4">在此处预览渲染后的 HTML</p>
+            </div>
+            <!-- 使用 iframe 来安全地渲染 HTML 内容 -->
+            <iframe id="render-output" class="w-full h-full border-0 absolute top-0 left-0 opacity-0" sandbox="allow-scripts allow-same-origin"></iframe>
+        </div>
+    </div>
+
+    <script>
+        const uploader = document.getElementById('html-uploader');
+        const renderOutput = document.getElementById('render-output');
+        const placeholder = document.getElementById('placeholder');
+        const fileNameDisplay = document.getElementById('file-name');
+
+        uploader.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+
+            // 检查是否选择了文件以及文件类型是否正确
+            if (file && (file.type === "text/html")) {
+                const reader = new FileReader();
+
+                // 文件读取成功后的回调
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    // 使用 srcdoc 属性来设置 iframe 的内容，这比直接操作 DOM 更安全
+                    // sandbox 属性增加了安全性，防止上传的文件执行恶意脚本
+                    renderOutput.srcdoc = content;
+
+                    // 平滑地显示渲染结果
+                    placeholder.style.opacity = '0';
+                    renderOutput.style.opacity = '1';
+                    
+                    fileNameDisplay.textContent = `当前文件: ${file.name}`;
+                };
+
+                // 文件读取失败的回调
+                reader.onerror = function() {
+                    console.error("无法读取文件");
+                    fileNameDisplay.textContent = "错误：无法读取文件。";
+                    // 恢复初始状态
+                    placeholder.style.opacity = '1';
+                    renderOutput.style.opacity = '0';
+                    renderOutput.srcdoc = '';
+                };
+
+                // 以文本形式读取文件
+                reader.readAsText(file);
+            } else {
+                 fileNameDisplay.textContent = "请选择一个有效的 .html 文件。";
+                 // 如果选择的文件无效，重置视图
+                 placeholder.style.opacity = '1';
+                 renderOutput.style.opacity = '0';
+                 renderOutput.srcdoc = '';
+            }
+        });
+    </script>
+</body>
+</html>
