@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML 文件查看器</title>
+    <!-- 引入 Tailwind CSS 以实现快速响应式布局 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 自定义样式，用于实现更美观的滚动条和布局 */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            background-color: #f3f4f6;
+        }
+        .file-list-item.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .file-list-item.active svg {
+            color: white;
+        }
+        /* Webkit 浏览器滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c7c7c7;
+            border-radius: 6px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a3a3a3;
+        }
+    </style>
+</head>
+<body class="flex h-screen">
+
+    <!-- 左侧文件列表栏 -->
+    <aside class="w-1/4 max-w-xs h-full bg-white shadow-md flex flex-col">
+        <div class="p-4 border-b">
+            <h1 class="text-xl font-bold text-gray-800">HTML 文件列表</h1>
+            <p class="text-sm text-gray-500">点击文件在右侧预览</p>
+        </div>
+        <nav id="file-list" class="flex-1 overflow-y-auto p-2 space-y-1">
+            <!-- 文件列表将通过 JavaScript 动态插入到这里 -->
+        </nav>
+    </aside>
+
+    <!-- 右侧 Webview 显示区域 -->
+    <main class="flex-1 h-full flex flex-col bg-gray-100">
+        <div class="p-4 border-b bg-white flex items-center shadow-sm">
+             <p id="webview-header" class="text-gray-700 font-semibold">请从左侧选择一个文件进行预览</p>
+        </div>
+        <div class="flex-1 p-4">
+            <iframe id="webview" class="w-full h-full bg-white rounded-lg shadow-inner border border-gray-200"></iframe>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const fileListElement = document.getElementById('file-list');
+            const webview = document.getElementById('webview');
+            const webviewHeader = document.getElementById('webview-header');
+
+            // **真实场景**: 您需要一个服务器端点 (例如 /api/get-html-files)
+            // 该端点会返回一个 JSON 数组，其中包含目录中所有 HTML 文件的名称。
+            // 例如: ["welcome.html", "about-us.html", "product-list.html"]
+            // 
+            // **模拟**: 为了演示，我们在这里继续使用一个模拟的数组。
+            // 在真实应用中，您会用下面的 fetch 调用替换这个模拟数组。
+            /*
+                async function fetchFiles() {
+                    try {
+                        const response = await fetch('/api/get-html-files'); // 您的服务器端点
+                        if (!response.ok) {
+                            throw new Error('网络响应错误');
+                        }
+                        const files = await response.json();
+                        return files;
+                    } catch (error) {
+                        console.error("无法获取文件列表:", error);
+                        fileListElement.innerHTML = `<p class="p-4 text-red-600">无法加载文件列表。</p>`;
+                        return [];
+                    }
+                }
+                const htmlFiles = await fetchFiles();
+            */
+
+            // --- 模拟数据开始 (在真实应用中删除此部分) ---
+            const htmlFiles = [
+                'welcome.html',
+                'about-us.html',
+                'product-list.html',
+                'contact-form.html'
+            ];
+            // 为了让这个模拟能工作，我们还需要模拟文件内容。
+            // 在真实应用中，您不需要这一部分，因为 iframe 会直接加载文件。
+            const mockContent = {
+                'welcome.html': `<!DOCTYPE html>... (内容省略)`,
+                'about-us.html': `<!DOCTYPE html>... (内容省略)`,
+                'product-list.html': `<!DOCTYPE html>... (内容省略)`,
+                'contact-form.html': `<!DOCTYPE html><html lang="zh-CN"><head><title>联系我们</title><style>body { font-family: sans-serif; padding: 2rem; background-color: #faf5ff; color: #581c87; } .form-group { margin-bottom: 1rem; } label { display: block; margin-bottom: 0.5rem; font-weight: bold; } input, textarea { width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #d8b4fe; box-sizing: border-box; } button { background-color: #9333ea; color: white; padding: 0.7rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; } button:hover { background-color: #7e22ce; }</style></head><body><h2>联系我们</h2><form><div class="form-group"><label for="name">您的姓名</label><input type="text" id="name" name="name"></div><div class="form-group"><label for="email">电子邮件</label><input type="email" id="email" name="email"></div><div class="form-group"><label for="message">消息</label><textarea id="message" name="message" rows="4"></textarea></div><button type="submit">发送</button></form></body></html>`
+            };
+             // --- 模拟数据结束 ---
+
+
+            // 清空文件列表以准备动态填充
+            fileListElement.innerHTML = '';
+            
+            // 动态生成文件列表
+            htmlFiles.forEach((fileName) => {
+                const item = document.createElement('a');
+                item.href = '#';
+                item.className = 'file-list-item flex items-center p-3 text-gray-700 rounded-md hover:bg-gray-100 transition-colors duration-200';
+                
+                const icon = `<svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>`;
+                item.innerHTML = `${icon}<span>${fileName}</span>`;
+                
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    
+                    // **真实场景**: 您会使用下面的代码行来设置 iframe 的 src
+                    // webview.src = fileName;
+
+                    // **模拟**: 为了演示，我们继续使用 srcdoc。
+                    // 在真实应用中，请删除下面这行，并取消上面一行的注释。
+                    webview.srcdoc = mockContent[fileName] || `<p>未找到文件 ${fileName} 的模拟内容。</p>`;
+
+                    webviewHeader.textContent = `正在预览: ${fileName}`;
+
+                    // 更新列表中的活动状态
+                    document.querySelectorAll('.file-list-item').forEach(el => el.classList.remove('active'));
+                    item.classList.add('active');
+                });
+
+                fileListElement.appendChild(item);
+            });
+            
+            // 默认加载第一个文件
+            if (fileListElement.firstElementChild) {
+                fileListElement.firstElementChild.click();
+            } else {
+                webviewHeader.textContent = '当前目录下未找到 HTML 文件';
+            }
+        });
+    </script>
+</body>
+</html>
+
