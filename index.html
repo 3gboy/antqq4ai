@@ -3,506 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全球人形机器人产业格局：交互式分析</title>
+    <title>HTML 文件查看器</title>
+    <!-- 引入 Tailwind CSS 以实现快速响应式布局 -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Calm Harmony (Warm neutrals with muted blue/green accents) -->
-    <!-- Application Structure Plan: A single-page dashboard with thematic sections (Overview, Company Deep Dive, Tech Teardown, Strategic Analysis). This non-linear structure allows users to freely explore and compare information based on their interests, which is more engaging and effective for synthesizing dense, comparative data than a linear report format. Key interactions include dynamic content updates based on user selections (e.g., choosing a company updates stats, charts, and text), and interactive charts that allow for direct comparison of technical specifications and strategic data. This design prioritizes user-driven exploration and understanding. -->
-    <!-- Visualization & Content Choices: 
-        - Company Specs: Goal: Compare. Viz: Dynamic Radar Chart (Chart.js). Interaction: Select company from a list to update chart. Justification: Radar charts excel at multi-variate comparison, providing a quick visual summary of a robot's strengths.
-        - Motor Torque: Goal: Compare. Viz: Horizontal Bar Chart (Chart.js). Interaction: Hover for details. Justification: Clearly visualizes the significant performance differences in a key hardware component.
-        - AI Architectures: Goal: Organize/Inform. Viz: Structured HTML/CSS Diagram (Tailwind Grid). Interaction: Click to expand details. Justification: An effective, non-SVG method to visually represent complex relationships and concepts.
-        - Supply Chain: Goal: Compare. Viz: Donut Chart (Chart.js). Interaction: Hover for percentage. Justification: A simple, intuitive way to show proportional data like domestic component sourcing.
-    -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
-        body {
-            font-family: 'Inter', 'Noto Sans SC', sans-serif;
-            background-color: #FDFBF8;
-            color: #383838;
+        /* 自定义样式，用于实现更美观的滚动条和布局 */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            background-color: #f3f4f6;
         }
-        .chart-container {
-            position: relative;
-            width: 100%;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-            height: 300px;
-            max-height: 400px;
-        }
-        @media (min-width: 768px) {
-            .chart-container {
-                height: 350px;
-            }
-        }
-        .nav-link {
-            transition: all 0.3s ease;
-            border-bottom: 2px solid transparent;
-        }
-        .nav-link.active, .nav-link:hover {
-            color: #2563eb;
-            border-bottom-color: #2563eb;
-        }
-        .content-section {
-            display: none;
-        }
-        .content-section.active {
-            display: block;
-        }
-        .card {
-            background-color: #FFFFFF;
-            border: 1px solid #EAEAEA;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-        .btn-selector {
-            transition: all 0.2s ease-in-out;
-        }
-        .btn-selector.active {
-            background-color: #2563eb;
+        .file-list-item.active {
+            background-color: #3b82f6;
             color: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .file-list-item.active svg {
+            color: white;
+        }
+        /* Webkit 浏览器滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c7c7c7;
+            border-radius: 6px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a3a3a3;
         }
     </style>
 </head>
-<body class="antialiased">
+<body class="flex h-screen">
 
-    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 border-b border-gray-200">
-        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center">
-                    <span class="text-2xl font-bold text-blue-600">🤖</span>
-                    <h1 class="ml-3 text-xl font-bold text-gray-800">人形机器人全球洞察</h1>
-                </div>
-                <div class="hidden md:block">
-                    <div class="ml-10 flex items-baseline space-x-4">
-                        <a href="#overview" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">产业概览</a>
-                        <a href="#deep-dive" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">企业深度解析</a>
-                        <a href="#tech-teardown" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">技术对决</a>
-                        <a href="#strategy" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">战略分析</a>
-                    </div>
-                </div>
-            </div>
+    <!-- 左侧文件列表栏 -->
+    <aside class="w-1/4 max-w-xs h-full bg-white shadow-md flex flex-col">
+        <div class="p-4 border-b">
+            <h1 class="text-xl font-bold text-gray-800">HTML 文件列表</h1>
+            <p class="text-sm text-gray-500">点击文件在右侧预览</p>
+        </div>
+        <!-- 硬编码的文件列表 -->
+        <nav id="file-list" class="flex-1 overflow-y-auto p-2 space-y-1">
+            <!-- 您可以在这里手动添加或删除文件项 -->
+            <a href="#" class="file-list-item flex items-center p-3 text-gray-700 rounded-md hover:bg-gray-100 transition-colors duration-200" data-src="./中美机器人研究报告.html">
+                <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                <span>中美机器人研究报告</span>
+            </a>
+            <a href="#" class="file-list-item flex items-center p-3 text-gray-700 rounded-md hover:bg-gray-100 transition-colors duration-200" data-src="about-us.html">
+                <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                <span>about-us.html</span>
+            </a>
+            <a href="#" class="file-list-item flex items-center p-3 text-gray-700 rounded-md hover:bg-gray-100 transition-colors duration-200" data-src="product-list.html">
+                <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                <span>product-list.html</span>
+            </a>
+             <a href="#" class="file-list-item flex items-center p-3 text-gray-700 rounded-md hover:bg-gray-100 transition-colors duration-200" data-src="contact-form.html">
+                <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                <span>contact-form.html</span>
+            </a>
         </nav>
-    </header>
+    </aside>
 
-    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        <section id="overview" class="content-section">
-            <div class="text-center mb-12">
-                <h2 class="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">具身智能的新纪元</h2>
-                <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-600">探索中美两国在人形机器人领域的激烈竞争，洞悉塑造未来的技术路线、商业战略与产业生态。</p>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="card rounded-xl p-6">
-                    <h3 class="text-2xl font-bold text-gray-800 mb-4">🇺🇸 美国：AI驱动的创新先锋</h3>
-                    <p class="text-gray-600 mb-4">以Figure AI、波士顿动力和特斯拉为代表，美国企业在基础AI模型（如VLA、LBM）和动态控制方面引领创新，通过与行业巨头（如宝马、现代）的深度试点合作，探索商业化路径。</p>
-                    <ul class="space-y-2 text-gray-700">
-                        <li><span class="font-semibold">核心优势：</span>基础AI算法、风险投资生态</li>
-                        <li><span class="font-semibold">商业模式：</span>高知名度试点项目，垂直整合</li>
-                        <li><span class="font-semibold">代表企业：</span>Figure AI, Boston Dynamics, Tesla, Agility Robotics</li>
-                    </ul>
-                </div>
-                <div class="card rounded-xl p-6">
-                    <h3 class="text-2xl font-bold text-gray-800 mb-4">🇨🇳 中国：产业生态的集大成者</h3>
-                    <p class="text-gray-600 mb-4">依托强大的制造业供应链、政府战略支持和庞大的国内市场，中国涌现出优必选、傅利叶智能等一批企业，在硬件性能、规模化部署和成本控制上展现出巨大优势。</p>
-                    <ul class="space-y-2 text-gray-700">
-                        <li><span class="font-semibold">核心优势：</span>供应链、制造成本、市场规模</li>
-                        <li><span class="font-semibold">商业模式：</span>大规模多行业部署，“闪电式扩张”</li>
-                        <li><span class="font-semibold">代表企业：</span>优必选, 傅利叶智能, 宇树科技, 小鹏</li>
-                    </ul>
-                </div>
-            </div>
-        </section>
-
-        <section id="deep-dive" class="content-section">
-            <div class="text-center mb-8">
-                <h2 class="text-3xl font-bold tracking-tight text-gray-900">企业深度解析</h2>
-                <p class="mt-2 max-w-2xl mx-auto text-md text-gray-600">选择一家公司，查看其核心技术、战略定位和关键参数的详细分析。</p>
-            </div>
-            <div class="flex justify-center flex-wrap gap-2 mb-8" id="company-selector">
-            </div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                <div class="card rounded-xl p-6">
-                    <h3 id="company-name" class="text-2xl font-bold text-gray-800 mb-4"></h3>
-                    <div id="company-specs" class="grid grid-cols-2 gap-4 mb-4 text-sm"></div>
-                    <p id="company-description" class="text-gray-600 leading-relaxed"></p>
-                </div>
-                <div>
-                    <div class="chart-container">
-                        <canvas id="specs-radar-chart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="tech-teardown" class="content-section">
-            <div class="text-center mb-12">
-                <h2 class="text-3xl font-bold tracking-tight text-gray-900">核心技术对决</h2>
-                <p class="mt-2 max-w-2xl mx-auto text-md text-gray-600">从驱动、操作到智能，深入对比中美机器人在关键技术领域的实现路径与战略权衡。</p>
-            </div>
-            <div class="space-y-12">
-                <div>
-                    <h3 class="text-2xl font-semibold text-center mb-6">驱动与运动：扭矩、精度与成本之战</h3>
-                    <p class="text-center text-gray-600 max-w-3xl mx-auto mb-6">关节电机是决定机器人动态性能的核心。中国企业凭借强大的国内供应链，在峰值扭矩等原始性能指标上表现突出，而美国企业则更专注于为规模化生产而设计的集成化执行器。</p>
-                    <div class="chart-container h-64 md:h-80">
-                        <canvas id="torque-bar-chart"></canvas>
-                    </div>
-                </div>
-                 <div>
-                    <h3 class="text-2xl font-semibold text-center mb-6">操作的艺术：灵巧手技术解析</h3>
-                    <p class="text-center text-gray-600 max-w-3xl mx-auto mb-6">灵巧手是机器人与世界交互的终端。美国公司追求通用性和AI驱动的灵活性，而中国公司则更侧重于工业应用所需的耐用性与精度。</p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
-                        <div class="card rounded-lg p-4">
-                            <div class="text-3xl mb-2">🖐️</div>
-                            <h4 class="font-bold">Figure 02</h4>
-                            <p class="text-sm text-blue-600 font-semibold">16 自由度</p>
-                            <p class="text-xs text-gray-500">追求人类等效的通用操作</p>
-                        </div>
-                        <div class="card rounded-lg p-4">
-                            <div class="text-3xl mb-2">🦾</div>
-                            <h4 class="font-bold">傅利叶 GR-2</h4>
-                            <p class="text-sm text-blue-600 font-semibold">12 自由度 + 触觉</p>
-                            <p class="text-xs text-gray-500">集成传感器实现精准力控</p>
-                        </div>
-                        <div class="card rounded-lg p-4">
-                            <div class="text-3xl mb-2">🤖</div>
-                            <h4 class="font-bold">优必选 Walker S2</h4>
-                            <p class="text-sm text-blue-600 font-semibold">工业级灵巧手</p>
-                            <p class="text-xs text-gray-500">为高耐用性和精度而设计</p>
-                        </div>
-                        <div class="card rounded-lg p-4">
-                            <div class="text-3xl mb-2">⚙️</div>
-                            <h4 class="font-bold">Tesla Optimus</h4>
-                            <p class="text-sm text-blue-600 font-semibold">11 自由度</p>
-                            <p class="text-xs text-gray-500">为规模化制造而设计</p>
-                        </div>
-                    </div>
-                </div>
-                <div>
-                    <h3 class="text-2xl font-semibold text-center mb-6">机器之“脑”：AI架构对比</h3>
-                    <p class="text-center text-gray-600 max-w-3xl mx-auto mb-6">具身智能的核心在于AI架构。美国公司开创了VLA和LBM等新范式，而中国公司则更务实地整合现有大模型并复用自动驾驶等成熟技术栈。</p>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="card rounded-lg p-6">
-                            <h4 class="font-bold text-lg mb-2">VLA (视觉-语言-动作)</h4>
-                            <p class="text-sm text-gray-500 mb-2">代表: Figure AI (Helix)</p>
-                            <p class="text-sm">解耦的“双脑”架构，分离慢速逻辑推理与快速动作执行，是一个端到端的模仿学习系统。</p>
-                        </div>
-                        <div class="card rounded-lg p-6">
-                            <h4 class="font-bold text-lg mb-2">LBM (大型行为模型)</h4>
-                            <p class="text-sm text-gray-500 mb-2">代表: Boston Dynamics</p>
-                            <p class="text-sm">结合经典控制理论（MPC）与现代机器学习的混合系统，通过模仿学习训练。</p>
-                        </div>
-                        <div class="card rounded-lg p-6">
-                            <h4 class="font-bold text-lg mb-2">端到端 / 技术复用</h4>
-                            <p class="text-sm text-gray-500 mb-2">代表: Tesla, 小鹏, 优必选</p>
-                            <p class="text-sm">利用汽车自动驾驶或整合现有大模型的务实路径，以加速开发和数据积累。</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="strategy" class="content-section">
-            <div class="text-center mb-12">
-                <h2 class="text-3xl font-bold tracking-tight text-gray-900">战略与生态分析</h2>
-                <p class="mt-2 max-w-2xl mx-auto text-md text-gray-600">商业化路径、供应链优势与国家政策，是决定这场竞赛胜负的关键战场。</p>
-            </div>
-            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
-                <div class="lg:col-span-2 card rounded-xl p-6">
-                    <h3 class="text-xl font-bold mb-4">市场进入策略对比</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <h4 class="font-semibold">🇺🇸 美国模式：深度试点</h4>
-                            <p class="text-sm text-gray-600">与宝马、现代等行业巨头进行一对一深度合作，在小规模试点中验证技术、迭代产品，为大规模推广做准备。</p>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold">🇨🇳 中国模式：闪电扩张</h4>
-                            <p class="text-sm text-gray-600">在汽车、电子、物流等多个行业与多家头部企业同时展开大规模实训部署，利用市场规模优势快速积累数据和运营经验。</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="lg:col-span-3 card rounded-xl p-6">
-                    <h3 class="text-xl font-bold mb-4">供应链优势与国家意志</h3>
-                    <p class="text-gray-600 text-sm mb-4">中国强大的制造业生态和国家战略支持，为其机器人产业提供了独特的竞争优势，尤其是在核心零部件国产化和研发投入方面。</p>
-                    <div class="chart-container h-64">
-                        <canvas id="supply-chain-chart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </section>
+    <!-- 右侧 Webview 显示区域 -->
+    <main class="flex-1 h-full flex flex-col bg-gray-100">
+        <div class="p-4 border-b bg-white flex items-center shadow-sm">
+             <p id="webview-header" class="text-gray-700 font-semibold">请从左侧选择一个文件进行预览</p>
+        </div>
+        <div class="flex-1 p-4">
+            <iframe id="webview" class="w-full h-full bg-white rounded-lg shadow-inner border border-gray-200"></iframe>
+        </div>
     </main>
 
     <script>
-        const appData = {
-            companies: {
-                'Figure AI': {
-                    name: 'Figure AI (Figure 02)',
-                    specs: { '身高(m)': 1.68, '体重(kg)': 70, '载荷(kg)': 20, '速度(m/s)': 1.2, '续航(h)': 5 },
-                    description: 'AI优先的先锋，开发了专有的Helix(VLA)模型。其战略核心是垂直整合软硬件，通过与宝马的合作，在高端制造业中验证其通用能力，长期目标是进入家庭服务。'
-                },
-                'Boston Dynamics': {
-                    name: 'Boston Dynamics (Electric Atlas)',
-                    specs: { '身高(m)': 1.75, '体重(kg)': 89, '载荷(kg)': 10, '速度(m/s)': 1.5, '续航(h)': 3 },
-                    description: '机器人领域的长期技术领导者，以卓越的动态性能著称。其新一代电动Atlas采用大型行为模型(LBM)，结合了经典控制理论与机器学习，与现代汽车合作进行商业化试点。'
-                },
-                'Tesla': {
-                    name: 'Tesla (Optimus Gen 2)',
-                    specs: { '身高(m)': 1.73, '体重(kg)': 57, '载荷(kg)': 20, '速度(m/s)': 2.2, '续航(h)': 8 },
-                    description: '规模化的赌注。核心战略是复用其成熟的汽车FSD技术栈和制造能力，目标是以极低成本（低于3万美元）实现大规模量产，首先应用于自有工厂，以制造业本身构筑护城河。'
-                },
-                '优必选': {
-                    name: '优必选 (Walker S2)',
-                    specs: { '身高(m)': 1.70, '体重(kg)': 70, '载荷(kg)': 15, '速度(m/s)': 2.0, '续航(h)': 24 },
-                    description: '中国的商业化领导者。已在多家新能源汽车工厂进行大规模实训部署，其Walker S2可自主更换电池实现24/7作业。通过BrainNet平台实现多机器人协同，正利用规模化运营构建数据护城河。'
-                },
-                '傅利叶智能': {
-                    name: '傅利叶智能 (GR-2)',
-                    specs: { '身高(m)': 1.75, '体重(kg)': 63, '载荷(kg)': 6, '速度(m/s)': 1.4, '续航(h)': 2 },
-                    description: '精密工程的代表。源自康复医疗背景，硬件精度高。战略定位是“为AI而生”的开放硬件平台，核心零部件国产化率超90%，旨在成为机器人领域的“安卓”。'
-                },
-                '宇树科技': {
-                    name: '宇树科技 (H1)',
-                    specs: { '身高(m)': 1.80, '体重(kg)': 47, '载荷(kg)': 5, '速度(m/s)': 3.3, '续航(h)': 1.5 },
-                    description: '以高动态性能和极致性价比著称。其自研的高扭矩电机是核心优势。商业模式类似大疆(DJI)，通过提供高性价比的开放平台和开源框架，旨在成为机器人研发领域的事实标准。'
-                },
-                 '小鹏': {
-                    name: '小鹏 (Iron)',
-                    specs: { '身高(m)': 1.78, '体重(kg)': 70, '载荷(kg)': 10, '速度(m/s)': 1.0, '续航(h)': 4 },
-                    description: '汽车跨界者。其机器人约70%的技术栈与电动汽车共享，直接复用其自动驾驶的端到端大模型和计算平台。这是一种利用现有技术积累降维打击的“不公平优势”策略。'
-                }
-            },
-            charts: {}
-        };
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileListItems = document.querySelectorAll('.file-list-item');
+            const webview = document.getElementById('webview');
+            const webviewHeader = document.getElementById('webview-header');
 
-        function init() {
-            setupNavigation();
-            setupCompanySelector();
-            createRadarChart();
-            createTorqueChart();
-            createSupplyChainChart();
-            
-            const initialSection = window.location.hash.substring(1) || 'overview';
-            showSection(initialSection);
-            
-            const initialCompany = Object.keys(appData.companies)[0];
-            updateCompanyView(initialCompany);
-        }
-
-        function setupNavigation() {
-            const navLinks = document.querySelectorAll('.nav-link');
-            navLinks.forEach(link => {
-                link.addEventListener('click', (e) => {
+            fileListItems.forEach(item => {
+                item.addEventListener('click', (e) => {
                     e.preventDefault();
-                    const sectionId = e.target.getAttribute('href').substring(1);
-                    showSection(sectionId);
-                    window.history.pushState(null, null, `#${sectionId}`);
+                    
+                    // 从 data-src 属性获取文件名
+                    const fileName = item.dataset.src;
+                    
+                    // 设置 iframe 的 src 来加载对应的 HTML 文件
+                    // **重要提示**: 这要求 'welcome.html', 'about-us.html' 等文件
+                    // 与这个 index.html 文件位于服务器上的同一目录下。
+                    webview.src = fileName;
+
+                    webviewHeader.textContent = `正在预览: ${fileName}`;
+
+                    // 更新列表中的活动状态
+                    fileListItems.forEach(el => el.classList.remove('active'));
+                    item.classList.add('active');
                 });
             });
-        }
 
-        function showSection(sectionId) {
-            document.querySelectorAll('.content-section').forEach(section => {
-                section.classList.remove('active');
-            });
-            const activeSection = document.getElementById(sectionId);
-            if (activeSection) {
-                activeSection.classList.add('active');
+            // 默认加载第一个文件
+            if (fileListItems.length > 0) {
+                fileListItems[0].click();
+            } else {
+                webviewHeader.textContent = '没有可预览的文件';
+                webview.src = 'about:blank'; // 清空 iframe
             }
-
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.toggle('active', link.getAttribute('href') === `#${sectionId}`);
-            });
-        }
-
-        function setupCompanySelector() {
-            const selectorContainer = document.getElementById('company-selector');
-            Object.keys(appData.companies).forEach(companyKey => {
-                const button = document.createElement('button');
-                button.textContent = companyKey;
-                button.className = 'btn-selector px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50';
-                button.dataset.company = companyKey;
-                button.addEventListener('click', () => updateCompanyView(companyKey));
-                selectorContainer.appendChild(button);
-            });
-        }
-
-        function updateCompanyView(companyKey) {
-            const companyData = appData.companies[companyKey];
-            if (!companyData) return;
-
-            document.getElementById('company-name').textContent = companyData.name;
-            document.getElementById('company-description').textContent = companyData.description;
-
-            const specsContainer = document.getElementById('company-specs');
-            specsContainer.innerHTML = '';
-            Object.entries(companyData.specs).forEach(([key, value]) => {
-                const specEl = document.createElement('div');
-                specEl.innerHTML = `<span class="font-semibold text-gray-500">${key}:</span> <span class="font-bold text-blue-600">${value}</span>`;
-                specsContainer.appendChild(specEl);
-            });
-            
-            document.querySelectorAll('#company-selector button').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.company === companyKey);
-            });
-
-            updateRadarChart(companyData.specs);
-        }
-
-        function createRadarChart() {
-            const ctx = document.getElementById('specs-radar-chart').getContext('2d');
-            const labels = ['身高(m)', '体重(kg)', '载荷(kg)', '速度(m/s)', '续航(h)'];
-            
-            const averageData = {
-                '身高(m)': 1.74, '体重(kg)': 65, '载荷(kg)': 12, '速度(m/s)': 1.8, '续航(h)': 6
-            };
-            
-            const normalizedAvg = normalizeData(averageData);
-
-            appData.charts.radar = new Chart(ctx, {
-                type: 'radar',
-                data: {
-                    labels: labels.map(l => l.split('(')[0]),
-                    datasets: [{
-                        label: '当前选择',
-                        data: [],
-                        backgroundColor: 'rgba(37, 99, 235, 0.2)',
-                        borderColor: 'rgba(37, 99, 235, 1)',
-                        pointBackgroundColor: 'rgba(37, 99, 235, 1)',
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: 'rgba(37, 99, 235, 1)'
-                    },
-                    {
-                        label: '行业平均',
-                        data: normalizedAvg,
-                        backgroundColor: 'rgba(200, 200, 200, 0.2)',
-                        borderColor: 'rgba(150, 150, 150, 1)',
-                        pointBackgroundColor: 'rgba(150, 150, 150, 1)',
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: 'rgba(150, 150, 150, 1)'
-                    }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        r: {
-                            angleLines: { display: false },
-                            suggestedMin: 0,
-                            suggestedMax: 100,
-                            pointLabels: { font: { size: 12 } },
-                            ticks: { display: false }
-                        }
-                    },
-                    plugins: {
-                        legend: { position: 'top' },
-                        tooltip: {
-                             callbacks: {
-                                label: function(context) {
-                                    const originalValue = context.chart.data.datasets[context.datasetIndex].originalData[context.dataIndex];
-                                    const label = context.chart.data.labels[context.dataIndex];
-                                    return `${label}: ${originalValue}`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-        
-        const maxValues = { '身高(m)': 2.0, '体重(kg)': 100, '载荷(kg)': 25, '速度(m/s)': 4.0, '续航(h)': 25 };
-
-        function normalizeData(specs) {
-            return Object.keys(specs).map(key => (specs[key] / maxValues[key]) * 100);
-        }
-
-        function updateRadarChart(specs) {
-            const chart = appData.charts.radar;
-            if (!chart) return;
-            const normalizedData = normalizeData(specs);
-            chart.data.datasets[0].data = normalizedData;
-            chart.data.datasets[0].originalData = Object.values(specs);
-            const avgSpecs = { '身高(m)': 1.74, '体重(kg)': 65, '载荷(kg)': 12, '速度(m/s)': 1.8, '续航(h)': 6 };
-            chart.data.datasets[1].originalData = Object.values(avgSpecs);
-            chart.update();
-        }
-
-        function createTorqueChart() {
-            const ctx = document.getElementById('torque-bar-chart').getContext('2d');
-            appData.charts.torque = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['宇树 M107 (H1)', '小米 CyberOne (髋)', '行业平均'],
-                    datasets: [{
-                        label: '峰值扭矩 (N·m)',
-                        data: [360, 300, 150],
-                        backgroundColor: ['#2563eb', '#3b82f6', '#93c5fd'],
-                        borderColor: ['#1d4ed8', '#2563eb', '#60a5fa'],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        title: { display: true, text: '关键关节电机峰值扭矩对比' }
-                    },
-                    scales: {
-                        x: { beginAtZero: true }
-                    }
-                }
-            });
-        }
-
-        function createSupplyChainChart() {
-            const ctx = document.getElementById('supply-chain-chart').getContext('2d');
-            appData.charts.supplyChain = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['中国核心零部件国产化率', '国际平均估算'],
-                    datasets: [{
-                        data: [80, 20],
-                        backgroundColor: ['#2563eb', '#dbeafe'],
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom' },
-                        title: { display: true, text: '核心零部件国产化率对比 (%)' },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    if (context.parsed !== null) {
-                                        if(context.label.includes('中国')) {
-                                            label += `> 70-90%`;
-                                        } else {
-                                            label += `< 50%`;
-                                        }
-                                    }
-                                    return label;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', init);
+        });
     </script>
 </body>
 </html>
+
