@@ -12,6 +12,7 @@
             margin: 0;
             padding: 0;
             height: 100vh;
+            /* 在移动端，body本身不需要flex，以便侧边栏可以浮动 */
             overflow: hidden;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
             background-color: #f3f4f6;
@@ -48,10 +49,13 @@
         }
     </style>
 </head>
-<body class="flex h-screen">
+<body class="relative md:flex h-screen">
+
+    <!-- 遮罩层，用于在移动端打开菜单时覆盖主内容区 -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
 
     <!-- 左侧文件列表栏 -->
-    <aside class="w-1/4 max-w-xs h-full bg-white shadow-md flex flex-col">
+    <aside id="sidebar" class="fixed top-0 left-0 w-64 max-w-xs h-full bg-white shadow-md flex flex-col z-40 transform -translate-x-full transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:w-1/4">
         <div class="p-4 border-b">
             <h1 class="text-xl font-bold text-gray-800">HTML 文件列表</h1>
             <p class="text-sm text-gray-500">点击文件在右侧预览</p>
@@ -81,8 +85,14 @@
     <!-- 右侧 Webview 显示区域 -->
     <main id="main-content" class="flex-1 h-full flex flex-col bg-gray-100 transition-all duration-300">
         <div class="p-4 border-b bg-white flex items-center justify-between shadow-sm">
-             <p id="webview-header" class="text-gray-700 font-semibold">请从左侧选择一个文件进行预览</p>
-             <button id="fullscreen-btn" class="p-2 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" title="切换全屏">
+             <!-- 移动端菜单按钮 (汉堡菜单) -->
+             <button id="menu-toggle-btn" class="md:hidden p-2 rounded-md hover:bg-gray-200 focus:outline-none" title="打开菜单">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+             </button>
+             <p id="webview-header" class="text-gray-700 font-semibold truncate ml-2">请从左侧选择一个文件进行预览</p>
+             <button id="fullscreen-btn" class="p-2 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ml-auto" title="切换全屏">
                 <svg id="icon-enter-fullscreen" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1v4m0 0h-4m4 0l-5-5M4 16v4m0 0h4m-4 0l5-5m11 1v-4m0 0h-4m4 0l-5 5" />
                 </svg>
@@ -98,6 +108,9 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const menuToggleBtn = document.getElementById('menu-toggle-btn');
             const fileListItems = document.querySelectorAll('.file-list-item');
             const webview = document.getElementById('webview');
             const webviewHeader = document.getElementById('webview-header');
@@ -105,6 +118,16 @@
             const mainContent = document.getElementById('main-content');
             const iconEnter = document.getElementById('icon-enter-fullscreen');
             const iconExit = document.getElementById('icon-exit-fullscreen');
+
+            const toggleSidebar = () => {
+                sidebar.classList.toggle('-translate-x-full');
+                overlay.classList.toggle('hidden');
+            };
+
+            // 移动端菜单按钮事件
+            menuToggleBtn.addEventListener('click', toggleSidebar);
+            // 遮罩层点击事件
+            overlay.addEventListener('click', toggleSidebar);
 
             fileListItems.forEach(item => {
                 item.addEventListener('click', (e) => {
@@ -116,6 +139,11 @@
 
                     fileListItems.forEach(el => el.classList.remove('active'));
                     item.classList.add('active');
+
+                    // 如果侧边栏是打开的 (在移动端), 则关闭它
+                    if (!sidebar.classList.contains('-translate-x-full')) {
+                        toggleSidebar();
+                    }
                 });
             });
             
