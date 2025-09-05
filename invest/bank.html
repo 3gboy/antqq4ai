@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中国A股银行股投资策略分析</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony -->
+    <!-- Application Structure Plan: The application is designed as an interactive dashboard with four distinct thematic sections accessible via a sticky navigation bar: Core Logic, Return Analysis, Risk Matrix, and Stock Recommendations. This structure allows users to explore the complex financial analysis in a non-linear way, focusing on the areas most relevant to them. The dashboard approach is chosen over a simple report layout because it facilitates user engagement and comparison of different data points (e.g., valuation vs. dividends, different types of risks, various stock profiles), leading to a deeper understanding of the investment thesis. Key interactions include chart filtering, clickable risk elements revealing details, and interactive cards for stock specifics, all designed to make dense information digestible and accessible. -->
+    <!-- Visualization & Content Choices: 
+        1. Valuation History (P/B Ratio): Report Info -> Bank sector vs. market valuation. Goal -> Compare. Viz -> Line Chart. Interaction -> Hover for details. Justification -> Clearly shows the historical valuation gap, a core part of the investment logic. Library -> Chart.js.
+        2. Dividend Yield Comparison: Report Info -> Dividend yields of major banks. Goal -> Compare/Inform. Viz -> Bar Chart. Interaction -> Toggle between different bank types. Justification -> Highlights the high-yield attraction, a key return component. Library -> Chart.js.
+        3. Risk Matrix: Report Info -> Various macro and industry risks. Goal -> Organize. Viz -> Interactive HTML Grid. Interaction -> Click to expand details. Justification -> Structures complex risks by impact/probability, making them easier to assess than a long list. Method -> HTML/CSS/JS.
+        4. Stock Recommendation Cards: Report Info -> Specific bank recommendations. Goal -> Inform. Viz -> Interactive Cards. Interaction -> Click to reveal key metrics and thesis. Justification -> Presents actionable ideas in an engaging, summary format. Method -> HTML/CSS/JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', 'Helvetica Neue', 'Hiragino Sans GB', 'WenQuanYi Micro Hei', 'Microsoft Yahei', sans-serif;
+            background-color: #f8f9fa; 
+            color: #343a40;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 40vh;
+            max-height: 400px;
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link.active, .nav-link:hover {
+            color: #0056b3;
+            border-bottom-color: #0056b3;
+        }
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .risk-item {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .risk-item:hover, .risk-item.active {
+            background-color: #e9ecef;
+            transform: scale(1.05);
+        }
+        .stock-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .stock-card.flipped .stock-card-inner {
+            transform: rotateY(180deg);
+        }
+        .stock-card-front, .stock-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+        .stock-card-back {
+            transform: rotateY(180deg);
+            background-color: #0056b3;
+            color: white;
+        }
+        .btn-group button.active {
+            background-color: #0056b3;
+            color: white;
+            border-color: #0056b3;
+        }
+    </style>
+</head>
+<body class="bg-[#fdfbf7]">
+
+    <header class="bg-white/80 backdrop-blur-lg shadow-sm sticky top-0 z-50">
+        <nav class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-xl md:text-2xl font-bold text-[#333333]">A股银行股投资策略仪表盘</h1>
+            <div class="hidden md:flex items-center space-x-6 text-gray-600 font-medium">
+                <a href="#logic" class="nav-link pb-1">核心逻辑</a>
+                <a href="#returns" class="nav-link pb-1">回报分析</a>
+                <a href="#risks" class="nav-link pb-1">风险矩阵</a>
+                <a href="#recommendations" class="nav-link pb-1">个股推荐</a>
+            </div>
+            <div class="md:hidden">
+                <select id="mobile-nav" class="bg-gray-200 border border-gray-300 rounded-md p-2">
+                    <option value="#logic">核心逻辑</option>
+                    <option value="#returns">回报分析</option>
+                    <option value="#risks">风险矩阵</option>
+                    <option value="#recommendations">个股推荐</option>
+                </select>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8">
+        
+        <section id="logic" class="py-12 md:py-16 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-[#0056b3]">核心投资逻辑：为何当前关注银行股？</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">
+                    当前时点，中国A股银行板块具备了多重投资价值。本部分将从估值、股息、经济环境和政策导向四个核心维度，阐述其配置逻辑，帮助您理解为何银行股可能成为穿越周期的稳健之选。
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                <div class="space-y-6">
+                    <div class="card bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-800">📊 历史性估值洼地</h3>
+                        <p class="text-gray-600">银行板块市净率（P/B）长期处于历史低位，远低于A股整体水平。这为投资者提供了较高的安全边际，意味着下行风险有限，而向上修复的空间广阔。</p>
+                    </div>
+                    <div class="card bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-800">💰 稳定的高股息回报</h3>
+                        <p class="text-gray-600">大型国有银行股息率普遍高于5%，甚至超过部分银行理财产品收益。在低利率环境下，高股息资产成为长线资金和追求稳定现金流投资者的理想选择。</p>
+                    </div>
+                     <div class="card bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-800">📈 经济企稳与修复</h3>
+                        <p class="text-gray-600">随着宏观经济逐步企稳回升，企业盈利能力改善，银行资产质量的担忧将得到缓解。信贷需求的回暖和净息差压力见底，有望驱动银行业绩迎来拐点。</p>
+                    </div>
+                    <div class="card bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-800">🏛️ “中特估”政策催化</h3>
+                        <p class="text-gray-600">“中国特色估值体系”强调国有企业特别是核心金融机构的价值重估。银行作为国家经济命脉，其服务实体经济、维护金融稳定的社会价值有望在市值中得到更充分体现。</p>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-lg">
+                    <p class="text-center font-medium mb-4">银行板块 vs. 沪深300 市净率(P/B)对比</p>
+                    <div class="chart-container h-[45vh] max-h-[450px]">
+                        <canvas id="pbChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="returns" class="py-12 md:py-16 bg-gray-50 rounded-xl scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-[#0056b3]">投资回报分析</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">银行股的投资回报主要由两部分构成：稳定的股息收益和估值修复带来的资本利得。本节通过可视化图表和互动工具，为您展示不同类型银行的股息水平及潜在的回报空间。</p>
+            </div>
+             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                 <div class="bg-white p-4 rounded-lg shadow-lg">
+                    <div class="flex justify-center mb-4">
+                        <div id="dividendChartBtnGroup" class="btn-group inline-flex rounded-md shadow-sm" role="group">
+                            <button type="button" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-blue-700 active" data-type="state">
+                                国有大行
+                            </button>
+                            <button type="button" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-blue-700" data-type="joint">
+                                股份制银行
+                            </button>
+                            <button type="button" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-r-md hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-blue-700" data-type="city">
+                                优质城商行
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-container h-[40vh] max-h-[400px]">
+                        <canvas id="dividendChart"></canvas>
+                    </div>
+                </div>
+                <div class="card bg-white p-8 rounded-lg shadow">
+                    <h3 class="text-2xl font-semibold mb-4 text-center">长期回报模拟</h3>
+                    <p class="text-center text-gray-500 mb-6">基于股息和估值修复的简单测算。</p>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="investmentAmount" class="block text-sm font-medium text-gray-700">初始投资金额 (元)</label>
+                            <input type="number" id="investmentAmount" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" value="100000">
+                        </div>
+                         <div>
+                            <label for="annualDividendYield" class="block text-sm font-medium text-gray-700">年化股息率 (%)</label>
+                            <input type="range" id="annualDividendYield" min="3" max="8" value="5.5" step="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <div class="text-center font-bold text-indigo-600" id="dividendYieldValue">5.5%</div>
+                        </div>
+                        <div>
+                            <label for="valuationGrowth" class="block text-sm font-medium text-gray-700">估值修复年化收益 (%)</label>
+                            <input type="range" id="valuationGrowth" min="0" max="10" value="3" step="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <div class="text-center font-bold text-indigo-600" id="valuationGrowthValue">3.0%</div>
+                        </div>
+                    </div>
+                    <div class="mt-8 pt-6 border-t">
+                        <p class="text-lg text-center">预计 <strong class="text-blue-600">5</strong> 年后总资产:</p>
+                        <p id="futureValue" class="text-3xl font-bold text-center text-gray-800 mt-2">¥150,366.40</p>
+                        <p id="totalReturn" class="text-md text-center text-green-600 mt-1">(总回报率: 50.4%)</p>
+                    </div>
+                </div>
+             </div>
+        </section>
+
+        <section id="risks" class="py-12 md:py-16 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-[#0056b3]">潜在风险矩阵</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">任何投资都伴随着风险。清晰认知并评估潜在风险，是做出理性决策的前提。我们将主要风险归纳为四个方面，并通过互动方式为您展示其具体内容和可能的影响。</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="risk-item bg-white p-6 rounded-lg shadow text-center flex flex-col justify-center items-center active" data-risk="macro">
+                        <span class="text-4xl">📉</span>
+                        <h4 class="font-semibold mt-2">宏观经济波动</h4>
+                    </div>
+                    <div class="risk-item bg-white p-6 rounded-lg shadow text-center flex flex-col justify-center items-center" data-risk="property">
+                        <span class="text-4xl">🏠</span>
+                        <h4 class="font-semibold mt-2">房地产风险</h4>
+                    </div>
+                    <div class="risk-item bg-white p-6 rounded-lg shadow text-center flex flex-col justify-center items-center" data-risk="nim">
+                        <span class="text-4xl">⚖️</span>
+                        <h4 class="font-semibold mt-2">息差收窄压力</h4>
+                    </div>
+                    <div class="risk-item bg-white p-6 rounded-lg shadow text-center flex flex-col justify-center items-center" data-risk="debt">
+                         <span class="text-4xl">🏛️</span>
+                        <h4 class="font-semibold mt-2">地方债务问题</h4>
+                    </div>
+                </div>
+                <div id="risk-details" class="bg-white p-8 rounded-lg shadow-inner">
+                </div>
+            </div>
+        </section>
+
+        <section id="recommendations" class="py-12 md:py-16 bg-gray-50 rounded-xl scroll-mt-20">
+             <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-[#0056b3]">长期投资个股推荐</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">基于以上分析，我们从稳健和成长两个维度，筛选出值得长期关注的银行股。点击卡片查看各银行的核心投资看点和关键财务指标。</p>
+            </div>
+            <div class="space-y-10">
+                <div>
+                    <h3 class="text-2xl font-bold mb-6 text-center text-gray-700">🛡️ 稳健价值型 (高股息、低波动)</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="stock-card h-52 cursor-pointer" data-bank="icbc">
+                            <div class="stock-card-inner">
+                                <div class="stock-card-front bg-white shadow-lg flex-col justify-center items-center p-4 rounded-lg">
+                                    <h4 class="text-xl font-bold">工商银行</h4>
+                                    <p class="text-gray-500">宇宙行，定海神针</p>
+                                </div>
+                                <div class="stock-card-back p-4 text-sm text-left">
+                                    <p><strong>逻辑:</strong> 规模全球领先，资产质量稳健，股息率极具吸引力，是防御性配置首选。</p>
+                                    <ul class="mt-2 list-disc list-inside">
+                                        <li>P/B: 0.55x</li>
+                                        <li>股息率: ~6.0%</li>
+                                        <li>ROE: ~10%</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                         <div class="stock-card h-52 cursor-pointer" data-bank="ccb">
+                            <div class="stock-card-inner">
+                                <div class="stock-card-front bg-white shadow-lg flex-col justify-center items-center p-4 rounded-lg">
+                                    <h4 class="text-xl font-bold">建设银行</h4>
+                                    <p class="text-gray-500">基建龙头，对公优势</p>
+                                </div>
+                                <div class="stock-card-back p-4 text-sm text-left">
+                                    <p><strong>逻辑:</strong> 在基础设施贷款领域优势明显，受益于国家稳增长政策。估值和股息同样具备吸引力。</p>
+                                    <ul class="mt-2 list-disc list-inside">
+                                        <li>P/B: 0.58x</li>
+                                        <li>股息率: ~5.8%</li>
+                                        <li>ROE: ~11%</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stock-card h-52 cursor-pointer" data-bank="abc">
+                            <div class="stock-card-inner">
+                                <div class="stock-card-front bg-white shadow-lg flex-col justify-center items-center p-4 rounded-lg">
+                                    <h4 class="text-xl font-bold">农业银行</h4>
+                                    <p class="text-gray-500">深耕县域，服务三农</p>
+                                </div>
+                                <div class="stock-card-back p-4 text-sm text-left">
+                                    <p><strong>逻辑:</strong> 县域业务护城河深，资产质量持续改善，成长性在四大行中相对突出，兼具价值与成长。</p>
+                                    <ul class="mt-2 list-disc list-inside">
+                                        <li>P/B: 0.60x</li>
+                                        <li>股息率: ~5.5%</li>
+                                        <li>ROE: ~10.5%</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stock-card h-52 cursor-pointer" data-bank="boc">
+                            <div class="stock-card-inner">
+                                <div class="stock-card-front bg-white shadow-lg flex-col justify-center items-center p-4 rounded-lg">
+                                    <h4 class="text-xl font-bold">中国银行</h4>
+                                    <p class="text-gray-500">跨境金融，全球布局</p>
+                                </div>
+                                <div class="stock-card-back p-4 text-sm text-left">
+                                    <p><strong>逻辑:</strong> 全球化和跨境业务最具特色，受益于人民币国际化进程。估值处于历史绝对低位。</p>
+                                    <ul class="mt-2 list-disc list-inside">
+                                        <li>P/B: 0.52x</li>
+                                        <li>股息率: ~6.2%</li>
+                                        <li>ROE: ~9.5%</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-2xl font-bold mb-6 text-center text-gray-700">🚀 优质成长型 (高ROA、强零售)</h3>
+                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="stock-card h-52 cursor-pointer" data-bank="cmb">
+                            <div class="stock-card-inner">
+                                <div class="stock-card-front bg-white shadow-lg flex-col justify-center items-center p-4 rounded-lg">
+                                    <h4 class="text-xl font-bold">招商银行</h4>
+                                    <p class="text-gray-500">零售之王，财富管理</p>
+                                </div>
+                                <div class="stock-card-back p-4 text-sm text-left">
+                                    <p><strong>逻辑:</strong> 零售业务护城河极深，财富管理和私行业务领先，盈利能力和资产质量长期优于同业。</p>
+                                    <ul class="mt-2 list-disc list-inside">
+                                        <li>P/B: 1.10x</li>
+                                        <li>股息率: ~4.5%</li>
+                                        <li>ROE: ~16%</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stock-card h-52 cursor-pointer" data-bank="nbb">
+                            <div class="stock-card-inner">
+                                <div class="stock-card-front bg-white shadow-lg flex-col justify-center items-center p-4 rounded-lg">
+                                    <h4 class="text-xl font-bold">宁波银行</h4>
+                                    <p class="text-gray-500">风控标杆，成长典范</p>
+                                </div>
+                                <div class="stock-card-back p-4 text-sm text-left">
+                                    <p><strong>逻辑:</strong> 城商行中的成长典范，风控能力卓越，资产质量优异，高成长性带来估值溢价。</p>
+                                    <ul class="mt-2 list-disc list-inside">
+                                        <li>P/B: 1.05x</li>
+                                        <li>股息率: ~3.0%</li>
+                                        <li>ROE: ~15%</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stock-card h-52 cursor-pointer" data-bank="pab">
+                            <div class="stock-card-inner">
+                                <div class="stock-card-front bg-white shadow-lg flex-col justify-center items-center p-4 rounded-lg">
+                                    <h4 class="text-xl font-bold">平安银行</h4>
+                                    <p class="text-gray-500">科技赋能，综合金融</p>
+                                </div>
+                                <div class="stock-card-back p-4 text-sm text-left">
+                                    <p><strong>逻辑:</strong> 依托平安集团综合金融优势，科技赋能零售转型成果显著，对公业务特色鲜明，弹性较大。</p>
+                                     <ul class="mt-2 list-disc list-inside">
+                                        <li>P/B: 0.75x</li>
+                                        <li>股息率: ~4.0%</li>
+                                        <li>ROE: ~12%</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stock-card h-52 cursor-pointer" data-bank="jsb">
+                            <div class="stock-card-inner">
+                                <div class="stock-card-front bg-white shadow-lg flex-col justify-center items-center p-4 rounded-lg">
+                                    <h4 class="text-xl font-bold">江苏银行</h4>
+                                    <p class="text-gray-500">区域龙头，小微金融</p>
+                                </div>
+                                <div class="stock-card-back p-4 text-sm text-left">
+                                    <p><strong>逻辑:</strong> 深耕经济发达的长三角地区，小微金融业务特色突出，成长性与资产质量俱佳，估值具备性价比。</p>
+                                    <ul class="mt-2 list-disc list-inside">
+                                        <li>P/B: 0.80x</li>
+                                        <li>股息率: ~4.8%</li>
+                                        <li>ROE: ~14%</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    
+    <footer class="bg-white border-t mt-16">
+        <div class="container mx-auto py-6 px-4 text-center text-gray-500">
+            <p>&copy; 2025 A股银行股投资策略分析. All Rights Reserved.</p>
+            <p class="text-sm mt-2">免责声明：本内容仅供研究和参考，不构成任何投资建议。</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            
+            const pbData = {
+                labels: ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025(E)'],
+                datasets: [
+                    {
+                        label: '银行板块 P/B',
+                        data: [1.3, 1.0, 1.1, 0.9, 0.85, 0.75, 0.7, 0.6, 0.55, 0.52, 0.5],
+                        borderColor: '#0056b3',
+                        backgroundColor: 'rgba(0, 86, 179, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: '沪深300 P/B',
+                        data: [2.0, 1.8, 1.9, 1.5, 1.7, 1.9, 1.8, 1.6, 1.4, 1.35, 1.3],
+                        borderColor: '#E4C79F',
+                        backgroundColor: 'rgba(228, 199, 159, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }
+                ]
+            };
+
+            const dividendData = {
+                state: {
+                    labels: ['工商银行', '建设银行', '农业银行', '中国银行', '交通银行'],
+                    data: [6.0, 5.8, 5.5, 6.2, 5.9]
+                },
+                joint: {
+                    labels: ['招商银行', '兴业银行', '平安银行', '中信银行', '民生银行'],
+                    data: [4.5, 6.5, 4.0, 5.7, 6.3]
+                },
+                city: {
+                    labels: ['宁波银行', '江苏银行', '南京银行', '北京银行', '上海银行'],
+                    data: [3.0, 4.8, 5.1, 4.9, 5.3]
+                }
+            };
+            
+            let pbChart, dividendChart;
+
+            function initPbChart() {
+                const ctx = document.getElementById('pbChart').getContext('2d');
+                pbChart = new Chart(ctx, {
+                    type: 'line',
+                    data: pbData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top' },
+                            tooltip: {
+                                callbacks: { label: (context) => `${context.dataset.label}: ${context.raw.toFixed(2)}x` }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                title: { display: true, text: '市净率 (P/B)' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function initDividendChart(type = 'state') {
+                const ctx = document.getElementById('dividendChart').getContext('2d');
+                if (dividendChart) {
+                    dividendChart.destroy();
+                }
+                dividendChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: dividendData[type].labels,
+                        datasets: [{
+                            label: '2025年预期股息率',
+                            data: dividendData[type].data,
+                            backgroundColor: '#5B86E5',
+                            borderColor: '#3a66b5',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        plugins: {
+                            legend: { display: false },
+                             tooltip: {
+                                callbacks: { label: (context) => `股息率: ${context.raw.toFixed(1)}%` }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                title: { display: true, text: '股息率 (%)' }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            const dividendChartBtnGroup = document.getElementById('dividendChartBtnGroup');
+            dividendChartBtnGroup.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    dividendChartBtnGroup.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+                    e.target.classList.add('active');
+                    const type = e.target.dataset.type;
+                    initDividendChart(type);
+                }
+            });
+
+            const riskData = {
+                macro: {
+                    title: '📉 宏观经济波动风险',
+                    content: '若国内经济复苏不及预期，或海外出现黑天鹅事件，将直接影响企业和居民的信贷需求与偿债能力，导致银行不良贷款率上升，盈利能力下降。这是银行股投资最基础也是最重要的风险点。'
+                },
+                property: {
+                    title: '🏠 房地产市场风险',
+                    content: '房地产行业仍在调整期，部分房企的债务违约风险尚未完全出清。银行作为房企的主要融资渠道，其资产质量与房地产市场的健康状况高度相关。房地产贷款及相关资产的质量是市场关注的核心焦点。'
+                },
+                nim: {
+                    title: '⚖️ 净息差持续收窄压力',
+                    content: '在支持实体经济、降低社会融资成本的导向下，贷款市场报价利率（LPR）可能继续下行。同时，存款定期化趋势加剧了银行的负债成本。存贷两端的压力共同挤压银行的净息差，这是影响其核心盈利能力的关键变量。'
+                },
+                debt: {
+                    title: '🏛️ 地方政府债务风险',
+                    content: '地方政府融资平台（LGFV）的债务问题是潜在的风险点。尽管一揽子化债方案正在推进，但部分地区的隐性债务风险仍需警惕。银行持有大量地方债和平台贷款，其风险暴露不容忽视。'
+                }
+            };
+            const riskItems = document.querySelectorAll('.risk-item');
+            const riskDetailsContainer = document.getElementById('risk-details');
+
+            function updateRiskDetails(riskKey) {
+                const data = riskData[riskKey];
+                riskDetailsContainer.innerHTML = `
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">${data.title}</h3>
+                    <p class="text-gray-600 leading-relaxed">${data.content}</p>
+                `;
+                riskItems.forEach(item => {
+                    item.classList.toggle('active', item.dataset.risk === riskKey);
+                });
+            }
+
+            riskItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    updateRiskDetails(item.dataset.risk);
+                });
+            });
+
+            const stockCards = document.querySelectorAll('.stock-card');
+            stockCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    card.classList.toggle('flipped');
+                });
+            });
+            
+            const investmentAmountInput = document.getElementById('investmentAmount');
+            const dividendYieldInput = document.getElementById('annualDividendYield');
+            const valuationGrowthInput = document.getElementById('valuationGrowth');
+            const dividendYieldValue = document.getElementById('dividendYieldValue');
+            const valuationGrowthValue = document.getElementById('valuationGrowthValue');
+            const futureValueDisplay = document.getElementById('futureValue');
+            const totalReturnDisplay = document.getElementById('totalReturn');
+
+            function calculateReturn() {
+                const principal = parseFloat(investmentAmountInput.value) || 0;
+                const dividendYield = parseFloat(dividendYieldInput.value) / 100;
+                const valuationGrowth = parseFloat(valuationGrowthInput.value) / 100;
+                const years = 5;
+
+                const totalAnnualReturn = dividendYield + valuationGrowth;
+                const futureValue = principal * Math.pow((1 + totalAnnualReturn), years);
+                const totalReturnRate = (futureValue / principal - 1) * 100;
+
+                futureValueDisplay.textContent = `¥${futureValue.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                totalReturnDisplay.textContent = `(总回报率: ${totalReturnRate.toFixed(1)}%)`;
+
+                dividendYieldValue.textContent = `${dividendYieldInput.value}%`;
+                valuationGrowthValue.textContent = `${valuationGrowthInput.value}%`;
+            }
+
+            [investmentAmountInput, dividendYieldInput, valuationGrowthInput].forEach(input => {
+                input.addEventListener('input', calculateReturn);
+            });
+            
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('main section');
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.toggle('active', link.getAttribute('href') === `#${entry.target.id}`);
+                        });
+                    }
+                });
+            }, { rootMargin: "-50% 0px -50% 0px" });
+
+            sections.forEach(section => observer.observe(section));
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+
+            const mobileNav = document.getElementById('mobile-nav');
+            mobileNav.addEventListener('change', (e) => {
+                const targetId = e.target.value;
+                document.querySelector(targetId).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+
+            initPbChart();
+            initDividendChart();
+            updateRiskDetails('macro');
+            calculateReturn();
+        });
+    </script>
+</body>
+</html>
