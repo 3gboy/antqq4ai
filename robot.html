@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>具身智能探索</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: The application is designed as a top-down narrative journey into Embodied AI, starting with a broad introduction and progressively delving into specifics. The structure uses distinct thematic sections (Intro, Developments, Core Tech, Challenges, Projects, Future) accessible via a sticky navigation bar for both linear reading and random access. This is more intuitive than a rigid report format, allowing users to explore topics of interest at their own pace. Key interactions include clickable cards to reveal detailed information, a filterable project list, and an interactive diagram, which cater to both high-level overview and deep-dive user behaviors, making complex information digestible. -->
+    <!-- Visualization & Content Choices: 
+        1. Core Technologies Relationship: Goal: Organize/Inform. Viz: HTML/CSS diagram. Interaction: Hovering highlights a component and shows its description. Justification: A visual diagram is more effective than text for explaining the cyclical relationship between perception, planning, and action. It provides a mental model for the user. Method: HTML/CSS with JS for interactivity.
+        2. Technology Focus Distribution: Goal: Inform/Compare. Viz: Doughnut Chart. Interaction: Hover tooltips show percentages. Justification: A doughnut chart quickly conveys the relative research focus on different tech areas. It provides a quantitative snapshot. Library: Chart.js (Canvas).
+        3. Challenges: Goal: Inform. Viz: Interactive Cards. Interaction: Clicking a card expands to show details. Justification: This prevents information overload by presenting high-level concepts first, allowing users to selectively explore details. Method: HTML/CSS with JS toggle.
+        4. Open Source Projects: Goal: Organize. Viz: Filterable List/Cards. Interaction: Users can click filter buttons to see projects by category. Justification: This makes a large list of projects manageable and allows users to find projects relevant to their specific interests (e.g., simulation, datasets). Method: HTML/CSS with JS filtering.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #F5F5F4;
+            /* stone-100 */
+            color: #374151;
+            /* gray-700 */
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+
+        .nav-link {
+            transition: color 0.3s, border-bottom-color 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: #3B82F6;
+            /* blue-500 */
+            border-bottom-color: #3B82F6;
+        }
+
+        .tech-diagram-item {
+            transition: all 0.3s ease-in-out;
+            cursor: pointer;
+        }
+
+        .tech-diagram-item:hover {
+            transform: scale(1.05);
+            background-color: #BFDBFE;
+            /* blue-200 */
+        }
+
+        .project-card {
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .challenge-card .details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+
+        .challenge-card.open .details {
+            max-height: 500px;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+    </style>
+</head>
+
+<body class="antialiased">
+
+    <header class="bg-stone-50/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-blue-600">具身智能 (Embodied AI) 洞察</h1>
+            <div class="hidden md:flex space-x-8">
+                <a href="#developments" class="nav-link font-medium pb-1">最新发展</a>
+                <a href="#technologies" class="nav-link font-medium pb-1">关键技术</a>
+                <a href="#challenges" class="nav-link font-medium pb-1">核心挑战</a>
+                <a href="#projects" class="nav-link font-medium pb-1">开源项目</a>
+                <a href="#future" class="nav-link font-medium pb-1">未来展望</a>
+            </div>
+            <button id="mobile-menu-button"
+                class="md:hidden p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="w-6 h-0.5 bg-gray-600 mb-1"></div>
+                <div class="w-6 h-0.5 bg-gray-600 mb-1"></div>
+                <div class="w-6 h-0.5 bg-gray-600"></div>
+            </button>
+        </nav>
+        <div id="mobile-menu" class="hidden md:hidden px-6 pb-4">
+            <a href="#developments" class="block py-2 text-center nav-link">最新发展</a>
+            <a href="#technologies" class="block py-2 text-center nav-link">关键技术</a>
+            <a href="#challenges" class="block py-2 text-center nav-link">核心挑战</a>
+            <a href="#projects" class="block py-2 text-center nav-link">开源项目</a>
+            <a href="#future" class="block py-2 text-center nav-link">未来展望</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+
+        <section id="intro" class="text-center mb-20">
+            <h2 class="text-4xl font-bold mb-4 text-gray-800">迈向与物理世界交互的智能</h2>
+            <p class="max-w-3xl mx-auto text-lg text-gray-600">
+                具身智能 (Embodied AI)
+                是人工智能发展的前沿领域，它致力于创造能够通过物理身体（如机器人）在真实或虚拟环境中感知、推理、并与世界互动的智能体。与依赖纯粹数字输入的传统AI不同，具身智能的目标是让AI“活”在物理世界中，理解并执行复杂的任务。
+            </p>
+        </section>
+
+        <section id="developments" class="mb-20 scroll-mt-24">
+            <h2 class="text-3xl font-bold text-center mb-12 text-gray-800">近期关键发展</h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-xl shadow-md border border-stone-200">
+                    <h3 class="text-xl font-semibold mb-3 text-blue-600">大型语言/多模态模型的融合</h3>
+                    <p class="text-gray-600">
+                        将LLM和VLM作为“大脑”，为机器人提供强大的自然语言理解、常识推理和任务规划能力。机器人能够理解更复杂、更抽象的指令，如“帮我整理一下客厅”。
+                    </p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-stone-200">
+                    <h3 class="text-xl font-semibold mb-3 text-blue-600">世界模型 (World Models) 的进步</h3>
+                    <p class="text-gray-600">
+                        智能体通过构建内部“世界模型”来预测其行为在环境中的可能后果。这使得智能体可以在“想象”中进行规划和学习，极大提升了学习效率和决策能力。
+                    </p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-stone-200">
+                    <h3 class="text-xl font-semibold mb-3 text-blue-600">端到端学习框架</h3>
+                    <p class="text-gray-600">
+                        从原始传感器输入（如摄像头图像）直接映射到机器人动作输出的端到端学习方法逐渐成为主流。这种方法减少了对复杂手动设计模块的依赖，增强了系统的泛化能力。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section id="technologies" class="mb-20 bg-stone-50 py-16 rounded-2xl scroll-mt-24">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-800">核心技术剖析</h2>
+                <p class="max-w-2xl mx-auto text-gray-600 mt-4">
+                    具身智能的实现依赖于感知、规划和行动三大核心技术的紧密协同。这些技术共同构成了一个完整的“感知-思考-行动”循环，使智能体能够在复杂环境中有效运作。点击下方图示中的模块，可以查看其详细介绍。
+                </p>
+            </div>
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h3 class="text-xl font-semibold text-center mb-4 text-gray-700">技术组件交互流程</h3>
+                    <div id="tech-diagram-info"
+                        class="bg-white p-4 rounded-lg shadow border border-stone-200 text-center min-h-[100px] flex items-center justify-center mb-6">
+                        <p class="text-gray-600">将鼠标悬停或点击下方模块查看详情</p>
+                    </div>
+                    <div class="relative flex flex-col items-center space-y-4">
+                        <div id="tech-perception"
+                            class="tech-diagram-item bg-blue-100 text-blue-800 w-3/4 p-4 rounded-lg shadow text-center font-semibold">
+                            感知 (Perception)
+                        </div>
+                        <div class="text-2xl text-gray-500">↓</div>
+                        <div id="tech-planning"
+                            class="tech-diagram-item bg-green-100 text-green-800 w-3/4 p-4 rounded-lg shadow text-center font-semibold">
+                            规划与决策 (Planning)
+                        </div>
+                        <div class="text-2xl text-gray-500">↓</div>
+                        <div id="tech-action"
+                            class="tech-diagram-item bg-purple-100 text-purple-800 w-3/4 p-4 rounded-lg shadow text-center font-semibold">
+                            行动 (Action)
+                        </div>
+                        <div
+                            class="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-12 text-2xl text-gray-500 transform rotate-90">
+                            →</div>
+                        <div
+                            class="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-24 text-gray-600 transform -rotate-90">
+                            环境反馈</div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-semibold text-center mb-4 text-gray-700">研究领域关注度</h3>
+                    <div class="chart-container">
+                        <canvas id="techFocusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="challenges" class="mb-20 scroll-mt-24">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-800">面临的核心挑战</h2>
+                <p class="max-w-2xl mx-auto text-gray-600 mt-4">
+                    尽管具身智能取得了显著进展，但要实现通用、鲁棒的智能体仍面临诸多挑战。这些挑战涉及从数据获取到算法泛化，再到与物理世界的安全交互等多个层面。点击下方的卡片以展开并了解每个挑战的详细信息。
+                </p>
+            </div>
+            <div class="space-y-4 max-w-4xl mx-auto">
+                <div class="challenge-card bg-white rounded-xl shadow-md border border-stone-200 overflow-hidden">
+                    <div class="p-6 cursor-pointer flex justify-between items-center">
+                        <h3 class="text-xl font-semibold text-amber-600">Sim-to-Real Gap (虚实迁移鸿沟)</h3>
+                        <span
+                            class="text-2xl font-light text-gray-400 transform transition-transform duration-300">+</span>
+                    </div>
+                    <div class="details px-6 text-gray-600">
+                        <p>在模拟器中训练的模型迁移到真实世界时，性能会显著下降。这是因为模拟器无法完美复现真实世界的物理规律、传感器噪声和环境多样性。弥合这一鸿沟是当前研究的重点。</p>
+                    </div>
+                </div>
+                <div class="challenge-card bg-white rounded-xl shadow-md border border-stone-200 overflow-hidden">
+                    <div class="p-6 cursor-pointer flex justify-between items-center">
+                        <h3 class="text-xl font-semibold text-amber-600">数据效率与泛化能力</h3>
+                        <span
+                            class="text-2xl font-light text-gray-400 transform transition-transform duration-300">+</span>
+                    </div>
+                    <div class="details px-6 text-gray-600">
+                        <p>机器人与物理世界交互以收集数据的成本极高且速度缓慢。如何利用有限的数据训练出能够泛化到新环境、新物体的模型是一个核心难题。这需要更高效的学习算法和更大规模、更多样化的数据集。</p>
+                    </div>
+                </div>
+                <div class="challenge-card bg-white rounded-xl shadow-md border border-stone-200 overflow-hidden">
+                    <div class="p-6 cursor-pointer flex justify-between items-center">
+                        <h3 class="text-xl font-semibold text-amber-600">长期任务规划与执行</h3>
+                        <span
+                            class="text-2xl font-light text-gray-400 transform transition-transform duration-300">+</span>
+                    </div>
+                    <div class="details px-6 text-gray-600">
+                        <p>对于需要多个步骤才能完成的复杂任务（如“做一顿饭”），智能体需要具备长期记忆、推理和动态调整计划的能力。在执行过程中，如何处理预料之外的错误和环境变化尤为关键。</p>
+                    </div>
+                </div>
+                <div class="challenge-card bg-white rounded-xl shadow-md border border-stone-200 overflow-hidden">
+                    <div class="p-6 cursor-pointer flex justify-between items-center">
+                        <h3 class="text-xl font-semibold text-amber-600">安全与社会交互</h3>
+                        <span
+                            class="text-2xl font-light text-gray-400 transform transition-transform duration-300">+</span>
+                    </div>
+                    <div class="details px-6 text-gray-600">
+                        <p>确保机器人在与人类和环境互动时的物理安全性是首要任务。此外，机器人还需要理解并遵守社会规范，使其行为可预测且易于被人类接受。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="projects" class="scroll-mt-24 mb-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-800">知名开源项目与平台</h2>
+                <p class="max-w-2xl mx-auto text-gray-600 mt-4">
+                    开源社区为具身智能的研究提供了宝贵的工具和资源，涵盖了模拟环境、机器人框架和大规模数据集。下方的项目是推动该领域发展的重要力量。您可以使用筛选按钮来浏览不同类别的项目。
+                </p>
+            </div>
+            <div class="flex justify-center space-x-2 md:space-x-4 mb-8">
+                <button class="project-filter-btn active px-4 py-2 rounded-full font-semibold bg-blue-500 text-white"
+                    data-filter="all">全部</button>
+                <button
+                    class="project-filter-btn px-4 py-2 rounded-full font-semibold bg-white text-gray-600 hover:bg-blue-100"
+                    data-filter="simulation">模拟环境</button>
+                <button
+                    class="project-filter-btn px-4 py-2 rounded-full font-semibold bg-white text-gray-600 hover:bg-blue-100"
+                    data-filter="framework">机器人框架</button>
+                <button
+                    class="project-filter-btn px-4 py-2 rounded-full font-semibold bg-white text-gray-600 hover:bg-blue-100"
+                    data-filter="dataset">数据集</button>
+            </div>
+            <div id="project-list" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            </div>
+        </section>
+
+        <section id="future" class="bg-blue-50 text-center py-16 rounded-2xl scroll-mt-24">
+            <h2 class="text-3xl font-bold mb-4 text-gray-800">未来展望</h2>
+            <p class="max-w-3xl mx-auto text-lg text-blue-900/80">
+                具身智能的未来是通用机器人。随着技术的成熟，我们将看到能够无缝融入人类生活、协助完成家务、提供护理、甚至在工业和科研等专业领域发挥关键作用的机器人。这不仅是一场技术革命，更将深刻地改变我们的社会结构和生活方式。
+            </p>
+        </section>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const techData = {
+                perception: {
+                    title: "感知 (Perception)",
+                    description: "智能体通过其传感器（如摄像头、激光雷达）收集关于环境和自身状态的原始数据，并将其处理成有意义的表征。例如，从像素中识别物体、估计距离和自身位置。",
+                    color: '#DBEAFE'
+                },
+                planning: {
+                    title: "规划与决策 (Planning)",
+                    description: "基于其对世界的理解和当前目标，智能体制定一系列行动计划以达成目标。这可能涉及高级任务规划（如决定先扫地后拖地）和低级运动规划（如计算手臂关节的具体运动轨迹）。",
+                    color: '#D1FAE5'
+                },
+                action: {
+                    title: "行动 (Action)",
+                    description: "将规划好的动作转化为物理指令，通过执行器（如电机、机械臂）在环境中执行。行动的结果会改变环境和智能体自身的状态，形成一个新的感知输入，构成闭环。",
+                    color: '#E9D5FF'
+                }
+            };
+
+            const techDiagramInfo = document.getElementById('tech-diagram-info');
+            const techDiagramItems = document.querySelectorAll('.tech-diagram-item');
+
+            techDiagramItems.forEach(item => {
+                item.addEventListener('mouseenter', () => {
+                    const techKey = item.id.split('-')[1];
+                    const data = techData[techKey];
+                    techDiagramInfo.innerHTML = `
+                <strong class="block text-lg">${data.title}</strong>
+                <p class="text-sm">${data.description}</p>
+            `;
+                    techDiagramInfo.style.backgroundColor = data.color;
+                });
+                item.addEventListener('mouseleave', () => {
+                    techDiagramInfo.innerHTML = `<p class="text-gray-600">将鼠标悬停或点击下方模块查看详情</p>`;
+                    techDiagramInfo.style.backgroundColor = '#FFFFFF';
+                });
+            });
+
+            const techFocusCtx = document.getElementById('techFocusChart').getContext('2d');
+            new Chart(techFocusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['多模态感知与融合', '世界模型与规划', '端到端控制与执行', 'Sim-to-Real'],
+                    datasets: [{
+                        label: '研究关注度',
+                        data: [35, 30, 20, 15],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(139, 92, 246, 0.7)',
+                            'rgba(245, 158, 11, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(139, 92, 246, 1)',
+                            'rgba(245, 158, 11, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    family: "'Noto Sans SC', sans-serif"
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const challengeCards = document.querySelectorAll('.challenge-card');
+            challengeCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    const alreadyOpen = card.classList.contains('open');
+                    challengeCards.forEach(c => {
+                        c.classList.remove('open');
+                        c.querySelector('span').style.transform = 'rotate(0deg)';
+                    });
+                    if (!alreadyOpen) {
+                        card.classList.add('open');
+                        card.querySelector('span').style.transform = 'rotate(45deg)';
+                    }
+                });
+            });
+
+            const projectsData = [
+                { name: 'NVIDIA Isaac Sim', category: 'simulation', description: '基于NVIDIA Omniverse的逼真机器人模拟和合成数据生成平台，物理仿真效果出色。' },
+                { name: 'Habitat', category: 'simulation', description: '由Facebook AI（现Meta AI）推出的具身AI研究平台，专注于逼真的3D环境模拟和导航任务。' },
+                { name: 'Gibson', category: 'simulation', description: '一个专注于感知-行动循环的真实感3D环境模拟器，包含了大量真实世界场景的扫描数据。' },
+                { name: 'ROS (Robot Operating System)', category: 'framework', description: '事实上的机器人开发标准框架，提供了一系列库和工具来帮助软件开发者创建机器人应用程序。' },
+                { name: 'Open-X-Embodiment', category: 'dataset', description: '由DeepMind联合多家机构发布的大规模、多平台机器人轨迹数据集，旨在推动通用机器人模型的发展。' },
+                { name: 'PyRobot', category: 'framework', description: '一个轻量级的、基于Python的机器人操作系统，旨在 democratize 机器人研究，降低AI和机器学习研究者进入机器人领域的门槛。' },
+                { name: 'RT-1 & RT-2', category: 'framework', description: 'Google DeepMind推出的机器人Transformer模型，展示了将大规模网络模型迁移到机器人控制领域的巨大潜力。' },
+                { name: 'Ego4D', category: 'dataset', description: '一个大规模、以第一人称视角记录的视频数据集，专注于捕捉日常生活中的人类活动，为具身AI提供了宝贵的学习资料。' },
+                { name: 'RoboSuite', category: 'simulation', description: '一个基于MuJoCo物理引擎的机器人模拟框架，提供了丰富的机器人模型和任务环境。' },
+            ];
+
+            const projectList = document.getElementById('project-list');
+            const filterBtns = document.querySelectorAll('.project-filter-btn');
+
+            function renderProjects(filter = 'all') {
+                projectList.innerHTML = '';
+                const filteredProjects = filter === 'all'
+                    ? projectsData
+                    : projectsData.filter(p => p.category === filter);
+
+                filteredProjects.forEach(project => {
+                    let categoryLabel, categoryColor;
+                    switch (project.category) {
+                        case 'simulation':
+                            categoryLabel = '模拟环境';
+                            categoryColor = 'bg-sky-100 text-sky-800';
+                            break;
+                        case 'framework':
+                            categoryLabel = '机器人框架';
+                            categoryColor = 'bg-lime-100 text-lime-800';
+                            break;
+                        case 'dataset':
+                            categoryLabel = '数据集';
+                            categoryColor = 'bg-fuchsia-100 text-fuchsia-800';
+                            break;
+                    }
+
+                    const projectEl = document.createElement('div');
+                    projectEl.className = 'project-card bg-white p-6 rounded-xl shadow-md border border-stone-200';
+                    projectEl.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <h3 class="text-xl font-semibold text-gray-800">${project.name}</h3>
+                    <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full ${categoryColor}">${categoryLabel}</span>
+                </div>
+                <p class="text-gray-600">${project.description}</p>
+            `;
+                    projectList.appendChild(projectEl);
+                });
+            }
+
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterBtns.forEach(b => {
+                        b.classList.remove('active', 'bg-blue-500', 'text-white');
+                        b.classList.add('bg-white', 'text-gray-600');
+                    });
+                    btn.classList.add('active', 'bg-blue-500', 'text-white');
+                    btn.classList.remove('bg-white', 'text-gray-600');
+                    renderProjects(btn.dataset.filter);
+                });
+            });
+
+            renderProjects();
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('section[id]');
+
+            function changeActiveLink() {
+                let index = sections.length;
+                while (--index && window.scrollY + 100 < sections[index].offsetTop) { }
+                navLinks.forEach((link) => link.classList.remove('active'));
+                const activeLink = document.querySelector(`.nav-link[href="#${sections[index].id}"]`);
+                if (activeLink) {
+                    activeLink.classList.add('active');
+                }
+            }
+            window.addEventListener('scroll', changeActiveLink);
+            changeActiveLink();
+
+            navLinks.forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    document.querySelector(targetId).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                    if (document.getElementById('mobile-menu').classList.contains('hidden') === false) {
+                        document.getElementById('mobile-menu').classList.add('hidden');
+                    }
+                });
+            });
+
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        });
+    </script>
+
+</body>
+
+</html>
