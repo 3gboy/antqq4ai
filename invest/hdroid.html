@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人形机器人投资机会分析</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutral with Slate Blue Accent -->
+    <!-- Application Structure Plan: The application is designed as an interactive dashboard with a tabbed navigation system. This structure was chosen to logically segment the report's dense information into digestible parts: a high-level Market Overview, a detailed breakdown of the two main Investment Mainlines, and an interactive Core Portfolio Explorer. This non-linear approach allows users to freely explore the data based on their interests, rather than following the linear structure of the original document. The key interaction is the filterable portfolio, which directly addresses the user's implicit goal of identifying and understanding which companies to invest in by allowing them to slice the data by supply chain and component type. -->
+    <!-- Visualization & Content Choices: 
+        1. Market Growth (Report Info) -> Goal: Inform/Impact -> Viz: Bar Chart -> Interaction: Hover for details -> Justification: Visually represents the "10x growth" claim more effectively than text -> Library: Chart.js (Canvas).
+        2. Supply Chains (Report Info) -> Goal: Organize/Relate -> Viz: Structured HTML/CSS diagrams -> Interaction: N/A (visual organization is the key) -> Justification: Clearly maps components to companies without complex graphics, adhering to NO SVG/Mermaid rule. Uses Tailwind Grid/Flex.
+        3. Core Portfolio (Report Info) -> Goal: Explore/Analyze -> Viz: Interactive Filterable Grid of Cards -> Interaction: Click filters to dynamically update the displayed companies -> Justification: Provides a hands-on tool for users to analyze the recommended stocks based on specific criteria, directly answering "which companies can I buy?". -> Library/Method: Vanilla JS DOM manipulation.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #f8f7f4;
+            color: #333;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 50vh;
+            max-height: 450px;
+        }
+        .tab-btn {
+            transition: all 0.3s ease;
+        }
+        .tab-btn.active {
+            background-color: #4a5568;
+            color: #ffffff;
+            font-weight: 500;
+        }
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .supply-chain-diagram {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+        .component-card {
+            background-color: #ffffff;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            border-left: 4px solid #718096;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">人形机器人行业投资分析</h1>
+            <p class="text-lg text-gray-500">Q4有望迎来大行情，聚焦主线核心标的</p>
+        </header>
+
+        <main>
+            <section class="bg-white p-6 rounded-lg shadow-lg mb-8">
+                <h2 class="text-2xl font-bold text-gray-700 mb-3 border-b pb-2">核心观点：产业已至“临门一脚”时刻</h2>
+                <div class="grid md:grid-cols-3 gap-6 text-gray-600">
+                    <div class="bg-amber-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-amber-800">🚀 技术加速收敛</h3>
+                        <p class="mt-1 text-sm">马斯克强调Optimus优先级，Gen3进入定型，核心攻关“手与前臂”。AI 5芯片算力提升40倍，硬件技术正加速成熟。</p>
+                    </div>
+                    <div class="bg-sky-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-sky-800">📈 市场爆发在即</h3>
+                        <p class="mt-1 text-sm">展望Q4，Gen3定型将带来持续催化。预计2026年机器人出货量达3万台，实现10倍增长，Q4有望成为板块大行情的起点。</p>
+                    </div>
+                    <div class="bg-emerald-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-emerald-800">🏛️ 政策资本双轮驱动</h3>
+                        <p class="mt-1 text-sm">国内宇树、智元等加速资本化，小米、小鹏等有望发布新品，高规格产业政策组合拳可期，共同推动行业发展。</p>
+                    </div>
+                </div>
+            </section>
+
+            <div class="bg-white p-4 sm:p-6 rounded-lg shadow-lg">
+                <nav class="flex flex-wrap justify-center border-b border-gray-200 mb-6" id="tabs">
+                    <button data-target="market-overview" class="tab-btn active py-2 px-4 text-sm font-medium text-center text-gray-500 rounded-t-lg hover:bg-gray-200 hover:text-gray-700">市场概览</button>
+                    <button data-target="investment-mainlines" class="tab-btn py-2 px-4 text-sm font-medium text-center text-gray-500 rounded-t-lg hover:bg-gray-200 hover:text-gray-700">两大投资主线</button>
+                    <button data-target="core-portfolio" class="tab-btn py-2 px-4 text-sm font-medium text-center text-gray-500 rounded-t-lg hover:bg-gray-200 hover:text-gray-700">核心组合浏览器</button>
+                </nav>
+
+                <div id="tab-content">
+                    <div id="market-overview" class="tab-pane">
+                         <div class="text-center mb-6">
+                            <h3 class="text-xl font-bold text-gray-800">出货量有望实现10倍增长</h3>
+                            <p class="text-gray-500 mt-1">此图表展示了人形机器人市场出货量的预测。随着技术成熟和成本下降，预计从2024年到2026年将出现指数级增长，凸显了巨大的市场潜力。将鼠标悬停在条形图上可查看具体数值。</p>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="shipmentGrowthChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div id="investment-mainlines" class="tab-pane hidden">
+                        <div class="text-center mb-6">
+                            <h3 class="text-xl font-bold text-gray-800">锁定两大主线，把握产业机遇</h3>
+                             <p class="text-gray-500 mt-1">本部分详细拆解了报告中提出的两大投资主线：“T链”和“国产链”。您可以清晰地看到每个主线下游的关键零部件领域以及对应的核心供应商，从而更好地理解产业链的价值分布。</p>
+                        </div>
+                        <div class="space-y-8">
+                            <div>
+                                <h4 class="text-lg font-semibold text-gray-700 p-3 bg-gray-100 rounded-md">#T链：锚定“确定性”，聚焦核心供应链</h4>
+                                <p class="text-gray-500 text-sm mt-2 mb-4 px-3">T核心供应链具备方案迭代连续性、高供应商门槛（需技术研发+量产+海外产能）的特点。投资策略是聚焦有确定性的核心标的，而非博弈“送样”。</p>
+                                <div class="supply-chain-diagram p-3">
+                                    <div class="component-card">
+                                        <h5 class="font-bold">关节总成</h5>
+                                        <ul class="list-disc list-inside text-sm mt-2 text-gray-600"><li>拓普集团</li><li>三花智控</li><li>震裕科技</li></ul>
+                                    </div>
+                                    <div class="component-card">
+                                        <h5 class="font-bold">行星滚柱丝杠</h5>
+                                        <ul class="list-disc list-inside text-sm mt-2 text-gray-600"><li>新剑传动 (五洲新春)</li></ul>
+                                    </div>
+                                    <div class="component-card">
+                                        <h5 class="font-bold">灵巧手 (Gen3重点)</h5>
+                                        <ul class="list-disc list-inside text-sm mt-2 text-gray-600"><li>拓普集团</li><li>新剑传动</li><li>恒勃股份</li><li>骏鼎达</li></ul>
+                                    </div>
+                                    <div class="component-card">
+                                        <h5 class="font-bold">减速器</h5>
+                                        <ul class="list-disc list-inside text-sm mt-2 text-gray-600"><li>隆盛科技 (国产)</li><li>日本HD (现有)</li><li>尼得科 (现有)</li></ul>
+                                    </div>
+                                    <div class="component-card">
+                                        <h5 class="font-bold">电机</h5>
+                                        <ul class="list-disc list-inside text-sm mt-2 text-gray-600"><li>信质集团</li><li>震裕科技</li></ul>
+                                    </div>
+                                    <div class="component-card">
+                                        <h5 class="font-bold">轻量化</h5>
+                                        <ul class="list-disc list-inside text-sm mt-2 text-gray-600"><li>恒勃股份</li><li>唯科科技</li></ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-semibold text-gray-700 p-3 bg-gray-100 rounded-md">#国产链：“供应链卡位”与“应用场景放量”</h4>
+                                <p class="text-gray-500 text-sm mt-2 mb-4 px-3">国产链的机会在于两方面：一是关键零部件供应商凭借技术和成本优势实现“卡位”；二是在特定垂直应用场景中率先实现商业化落地。</p>
+                                <div class="supply-chain-diagram p-3">
+                                    <div class="component-card border-l-teal-500">
+                                        <h5 class="font-bold">供应链卡位</h5>
+                                        <ul class="list-disc list-inside text-sm mt-2 space-y-1 text-gray-600">
+                                            <li><span class="font-medium">总成:</span> 震裕科技</li>
+                                            <li><span class="font-medium">电机:</span> 信质集团, 雷赛智能, 步科股份</li>
+                                            <li><span class="font-medium">减速器:</span> 隆盛科技, 凯迪股份, 中大力德, 丰立智能</li>
+                                            <li><span class="font-medium">丝杠:</span> 雷迪克, 五洲新春</li>
+                                            <li><span class="font-medium">宇树链:</span> 涛涛车业, 迅捷兴</li>
+                                            <li><span class="font-medium">设备/代工:</span> 浙海德曼</li>
+                                        </ul>
+                                    </div>
+                                    <div class="component-card border-l-teal-500">
+                                        <h5 class="font-bold">应用场景放量</h5>
+                                        <ul class="list-disc list-inside text-sm mt-2 space-y-1 text-gray-600">
+                                            <li>特种行业</li>
+                                            <li>巡检 & 物流</li>
+                                            <li>生活健康服务</li>
+                                            <li>教育</li>
+                                            <li class="font-semibold mt-2">相关标的:</li>
+                                            <li>浙海德曼</li>
+                                            <li>荣泰健康</li>
+                                            <li>涛涛车业</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="core-portfolio" class="tab-pane hidden">
+                        <div class="text-center mb-6">
+                            <h3 class="text-xl font-bold text-gray-800">核心投资组合浏览器</h3>
+                            <p class="text-gray-500 mt-1">此工具汇集了报告中重点推荐的核心公司。您可以通过点击下方的筛选按钮，按“投资主线”或“核心部件”对公司进行分类查看，以快速找到您感兴趣的投资标的。</p>
+                        </div>
+
+                        <div id="filters" class="flex flex-wrap justify-center gap-2 mb-6">
+                            <button data-filter="all" class="filter-btn bg-slate-600 text-white py-2 px-4 rounded-full text-sm">全部显示</button>
+                            <button data-filter="t-chain" class="filter-btn bg-gray-200 py-2 px-4 rounded-full text-sm">T链</button>
+                            <button data-filter="cn-chain" class="filter-btn bg-gray-200 py-2 px-4 rounded-full text-sm">国产链</button>
+                            <button data-filter="assembly" class="filter-btn bg-gray-200 py-2 px-4 rounded-full text-sm">关节总成</button>
+                            <button data-filter="motor" class="filter-btn bg-gray-200 py-2 px-4 rounded-full text-sm">电机</button>
+                            <button data-filter="reducer" class="filter-btn bg-gray-200 py-2 px-4 rounded-full text-sm">减速器</button>
+                            <button data-filter="screw" class="filter-btn bg-gray-200 py-2 px-4 rounded-full text-sm">丝杠</button>
+                        </div>
+
+                        <div id="portfolio-grid" class="card-grid">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="text-center mt-12 text-gray-400 text-sm">
+            <p>数据来源：公开市场报告 | 交互式应用生成</p>
+            <p>本内容仅供研究分析，不构成任何投资建议。</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.tab-btn');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    const targetId = tab.getAttribute('data-target');
+                    tabPanes.forEach(pane => {
+                        if (pane.id === targetId) {
+                            pane.classList.remove('hidden');
+                        } else {
+                            pane.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+
+            const shipmentCtx = document.getElementById('shipmentGrowthChart').getContext('2d');
+            new Chart(shipmentCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['2024 (估)', '2025 (预)', '2026 (预)'],
+                    datasets: [{
+                        label: '人形机器人出货量 (台)',
+                        data: [3000, 12000, 30000],
+                        backgroundColor: 'rgba(75, 85, 99, 0.6)',
+                        borderColor: 'rgba(75, 85, 99, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: '出货量 (台)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ` ${context.dataset.label}: ${context.raw.toLocaleString()} 台`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const portfolioData = [
+                { name: '震裕科技', tags: ['t-chain', 'cn-chain', 'assembly', 'motor'] },
+                { name: '隆盛科技', tags: ['t-chain', 'cn-chain', 'reducer'] },
+                { name: '浙海德曼', tags: ['cn-chain', 'equipment', 'application'] },
+                { name: '唯科科技', tags: ['t-chain', 'lightweight'] },
+                { name: '拓普集团', tags: ['t-chain', 'assembly', 'hand'] },
+                { name: '信质集团', tags: ['t-chain', 'cn-chain', 'motor'] },
+                { name: '恒勃股份', tags: ['t-chain', 'lightweight', 'hand'] },
+                { name: '骏鼎达', tags: ['t-chain', 'hand'] },
+                { name: '荣泰健康', tags: ['cn-chain', 'application'] },
+                { name: '凯迪股份', tags: ['cn-chain', 'reducer'] },
+                { name: '涛涛车业', tags: ['cn-chain', 'yushu', 'application'] },
+                { name: '雷迪克', tags: ['cn-chain', 'screw'] },
+                { name: '五洲新春', tags: ['t-chain', 'cn-chain', 'screw'] },
+                { name: '迅捷兴', tags: ['cn-chain', 'yushu'] },
+                { name: '三花智控', tags: ['t-chain', 'assembly'] },
+                { name: '雷赛智能', tags: ['cn-chain', 'motor'] },
+                { name: '步科股份', tags: ['cn-chain', 'motor'] },
+                { name: '中大力德', tags: ['cn-chain', 'reducer'] },
+                { name: '丰立智能', tags: ['cn-chain', 'reducer'] },
+            ];
+
+            const portfolioGrid = document.getElementById('portfolio-grid');
+            const filterButtons = document.querySelectorAll('.filter-btn');
+
+            const tagMap = {
+                't-chain': 'T链',
+                'cn-chain': '国产链',
+                'assembly': '关节总成',
+                'motor': '电机',
+                'reducer': '减速器',
+                'screw': '丝杠',
+                'hand': '灵巧手',
+                'lightweight': '轻量化',
+                'equipment': '关键设备',
+                'application': '应用场景',
+                'yushu': '宇树链'
+            };
+
+            const renderPortfolio = (filter = 'all') => {
+                portfolioGrid.innerHTML = '';
+                const filteredData = filter === 'all' ? portfolioData : portfolioData.filter(item => item.tags.includes(filter));
+                
+                filteredData.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white p-4 rounded-lg shadow hover:shadow-xl transition-shadow duration-300';
+                    
+                    const tagsHtml = item.tags.map(tag => `<span class="inline-block bg-gray-200 text-gray-700 text-xs font-medium mr-2 mb-2 px-2.5 py-0.5 rounded-full">${tagMap[tag] || tag}</span>`).join('');
+
+                    card.innerHTML = `
+                        <h5 class="font-bold text-gray-800">${item.name}</h5>
+                        <div class="mt-2 flex flex-wrap">${tagsHtml}</div>
+                    `;
+                    portfolioGrid.appendChild(card);
+                });
+            };
+
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    filterButtons.forEach(btn => btn.classList.replace('bg-slate-600','bg-gray-200') || btn.classList.remove('text-white'));
+                    button.classList.add('bg-slate-600', 'text-white');
+                    button.classList.remove('bg-gray-200');
+
+                    const filterValue = button.dataset.filter;
+                    renderPortfolio(filterValue);
+                });
+            });
+
+            renderPortfolio();
+        });
+    </script>
+
+</body>
+</html>
