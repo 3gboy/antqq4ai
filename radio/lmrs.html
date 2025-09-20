@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>无线覆盖仿真方案深度研究</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Soothing Neutral -->
+    <!-- Application Structure Plan: 本应用采用单页专题式（thematic sections）布局。顶部设置固定导航栏，用户点击后可平滑滚动至相应主题区域。这种结构能引导用户从宏观概览到具体技术细节，再到方案对比和最终的实施流程，形成一条清晰的认知路径。选择这种结构是因为它符合研究报告的逻辑层次，比仪表盘式布局更能深入、有序地阐述一个复杂的技术课题。交互核心在于“点击探索”，例如点击卡片查看详情、切换图表数据、筛选表格、展开流程步骤，鼓励用户主动探索，而非被动接收信息。 -->
+    <!-- Visualization & Content Choices: 
+        1. 仿真要素关系图: 报告信息->组织关系, 目标->告知, 呈现方式->HTML/CSS流程块, 交互->无, 理由->直观展示仿真三大核心要素，建立初步认知, 库->Tailwind。
+        2. 数据获取方案: 报告信息->多种数据采集方法, 目标->组织与比较, 呈现方式->交互式卡片, 交互->点击卡片翻转或展开显示详情, 理由->在有限空间内清晰展示多种方案，并允许用户按需深入了解，避免信息过载, 库->Vanilla JS + Tailwind。
+        3. 方案对比雷达图: 报告信息->工具/方案的多维度属性, 目标->比较, 呈现方式->雷达图, 交互->下拉菜单切换对比项，鼠标悬浮提示, 理由->雷达图非常适合多维度（如精度、成本、复杂度）对比，能快速识别方案的综合优劣, 库->Chart.js。
+        4. 方案优劣对比表: 报告信息->定性的优缺点分析, 目标->比较, 呈现方式->可筛选的HTML表格, 交互->按钮筛选显示“工具”、“数据”或“全部”, 理由->表格是结构化对比定性信息的最优选择，筛选功能提升了可用性, 库->Vanilla JS + Tailwind。
+        5. 研究流程图: 报告信息->项目实施步骤, 目标->组织, 呈现方式->可展开的步骤流程图, 交互->点击步骤展开详细说明, 理由->清晰地呈现线性流程，交互式展开能有效管理信息密度，主次分明, 库->Vanilla JS + Tailwind。
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            background-color: #f8f9fa;
+            color: #343a40;
+            font-family: 'Helvetica Neue', 'Arial', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+        }
+        .nav-link {
+            transition: color 0.3s, border-bottom-color 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #007bff;
+            border-bottom-color: #007bff;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 40vh;
+            max-height: 450px;
+        }
+        .step-item.active {
+            background-color: #e9ecef;
+            border-left-color: #007bff;
+        }
+        .step-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+        .step-content.show {
+            max-height: 500px;
+        }
+        .tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800">无线覆盖仿真方案研究</h1>
+            <div class="hidden md:flex space-x-8">
+                <a href="#overview" class="nav-link pb-2">概览</a>
+                <a href="#simulation-tools" class="nav-link pb-2">仿真工具</a>
+                <a href="#data-acquisition" class="nav-link pb-2">数据获取</a>
+                <a href="#comparison" class="nav-link pb-2">方案对比</a>
+                <a href="#workflow" class="nav-link pb-2">研究流程</a>
+            </div>
+            <button id="mobile-menu-button" class="md:hidden focus:outline-none">
+                <span class="text-3xl">≡</span>
+            </button>
+        </nav>
+        <div id="mobile-menu" class="hidden md:hidden">
+            <a href="#overview" class="block py-2 px-6 text-sm hover:bg-gray-100">概览</a>
+            <a href="#simulation-tools" class="block py-2 px-6 text-sm hover:bg-gray-100">仿真工具</a>
+            <a href="#data-acquisition" class="block py-2 px-6 text-sm hover:bg-gray-100">数据获取</a>
+            <a href="#comparison" class="block py-2 px-6 text-sm hover:bg-gray-100">方案对比</a>
+            <a href="#workflow" class="block py-2 px-6 text-sm hover:bg-gray-100">研究流程</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+
+        <section id="overview" class="mb-24 scroll-mt-20">
+            <h2 class="text-4xl font-bold text-center mb-4 text-gray-800">项目概览：解构无线仿真</h2>
+            <p class="text-center text-lg text-gray-600 max-w-3xl mx-auto mb-12">
+                无线覆盖仿真旨在通过软件工具，在三维数字地图上模拟电磁波的传播过程，以预测无线信号在特定区域的强度和质量。一个成功的仿真项目高度依赖于三大核心要素：精确的场景建模、可靠的传播模型以及强大的仿真引擎。本应用将深入探讨这些要素的开源解决方案和实施路径。
+            </p>
+            <div class="flex flex-col md:flex-row justify-center items-center space-y-8 md:space-y-0 md:space-x-8">
+                <div class="card p-6 w-full md:w-1/4 text-center">
+                    <div class="text-5xl mb-4">🗺️</div>
+                    <h3 class="text-xl font-semibold mb-2">三维数字地图</h3>
+                    <p class="text-gray-600">仿真的“物理世界”，包括地形、地貌、建筑内外结构及材质信息。</p>
+                </div>
+                <div class="text-4xl text-blue-500 font-bold hidden md:block">+</div>
+                <div class="card p-6 w-full md:w-1/4 text-center">
+                    <div class="text-5xl mb-4">🔬</div>
+                    <h3 class="text-xl font-semibold mb-2">传播模型</h3>
+                    <p class="text-gray-600">描述电磁波传播规律的“物理法则”，如自由空间损耗、绕射、反射等。</p>
+                </div>
+                <div class="text-4xl text-blue-500 font-bold hidden md:block">+</div>
+                <div class="card p-6 w-full md:w-1/4 text-center">
+                    <div class="text-5xl mb-4">⚙️</div>
+                    <h3 class="text-xl font-semibold mb-2">仿真引擎</h3>
+                    <p class="text-gray-600">结合地图与模型的“计算核心”，执行传播计算并输出覆盖结果。</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="simulation-tools" class="mb-24 scroll-mt-20">
+            <h2 class="text-4xl font-bold text-center mb-4 text-gray-800">开源仿真工具探讨</h2>
+            <p class="text-center text-lg text-gray-600 max-w-3xl mx-auto mb-12">
+                开源工具为无线仿真研究提供了低成本、高灵活性的选择。它们通常专注于特定场景，并允许用户进行深度定制和二次开发。我们重点分析两款代表性的工具：SPLAT! 和 Pycraf。
+            </p>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="card p-8">
+                    <h3 class="text-2xl font-bold mb-4">SPLAT! - 经典室外覆盖预测</h3>
+                    <p class="text-gray-600 mb-4">
+                        SPLAT! (RF Signal Propagation, Loss, And Terrain) 是一款经典的命令行工具，主要用于VHF/UHF频段的地面点对点、点对区域的信号传播分析。它非常适合大规模地形环境下的室外覆盖预测。
+                    </p>
+                    <ul class="space-y-2 text-gray-700">
+                        <li class="flex items-start"><span class="text-blue-500 mr-2">✔️</span> <strong>核心模型:</strong> 基于 Longley-Rice (ITM) 模型，擅长处理地形绕射。</li>
+                        <li class="flex items-start"><span class="text-blue-500 mr-2">✔️</span> <strong>数据依赖:</strong> 主要使用SRTM等数字高程模型(DEM)数据。</li>
+                        <li class="flex items-start"><span class="text-blue-500 mr-2">✔️</span> <strong>优点:</strong> 计算速度快，对硬件要求低，稳定可靠。</li>
+                        <li class="flex items-start"><span class="text-red-500 mr-2">❌</span> <strong>局限:</strong> 默认不考虑建筑物、植被等地面杂波的影响，不适用于精细化的城市或室内仿真。</li>
+                    </ul>
+                </div>
+                <div class="card p-8">
+                    <h3 class="text-2xl font-bold mb-4">Pycraf - 射电天文学的启示</h3>
+                    <p class="text-gray-600 mb-4">
+                        Pycraf 是一个为射电天文学设计的Python库，但其包含的路径传播模型功能非常强大，尤其是对ITU-R P系列建议书的实现。通过修改和扩展，其潜力可用于更通用的无线仿真研究。
+                    </p>
+                    <ul class="space-y-2 text-gray-700">
+                        <li class="flex items-start"><span class="text-blue-500 mr-2">✔️</span> <strong>核心模型:</strong> 精确实现了ITU-R P.452（绕射）、P.617（反射）等多个传播模型。</li>
+                        <li class="flex items-start"><span class="text-blue-500 mr-2">✔️</span> <strong>数据依赖:</strong> 可灵活集成多种地形和气象数据。</li>
+                        <li class="flex items-start"><span class="text-blue-500 mr-2">✔️</span> <strong>优点:</strong> 模型标准化程度高，基于Python，易于扩展和集成。</li>
+                        <li class="flex items-start"><span class="text-red-500 mr-2">❌</span> <strong>局限:</strong> 本身非端到端仿真工具，需要大量开发工作来构建完整的仿真流程，尤其是在室内建模和射线追踪方面需要补充。</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-16">
+                <h3 class="text-3xl font-bold text-center mb-4 text-gray-800">深入射线追踪：主流开源引擎</h3>
+                <p class="text-center text-lg text-gray-600 max-w-3xl mx-auto mb-12">
+                    对于高频段（如毫米波）和复杂环境（如室内、密集城区），射线追踪（Ray-Tracing）是实现高精度仿真的核心技术。它通过模拟大量射线的路径来计算信号传播。以下是一些可用于构建射线追踪仿真器的核心开源工具。
+                </p>
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="card p-8">
+                        <h4 class="text-2xl font-bold mb-4">Sionna - 新一代GPU加速仿真</h4>
+                        <p class="text-gray-600 mb-4">
+                            NVIDIA开发的开源库，专注于6G物理层研究。它集成了基于NVIDIA OptiX的GPU加速射线追踪器，用于生成精确、可微分的信道模型。
+                        </p>
+                        <ul class="space-y-2 text-gray-700">
+                            <li class="flex items-start"><span class="text-blue-500 mr-2">✔️</span> <strong>优点:</strong> 端到端链路级仿真，GPU加速效率极高，与3GPP标准对齐。</li>
+                            <li class="flex items-start"><span class="text-red-500 mr-2">❌</span> <strong>局限:</strong> 学习曲线陡峭，强依赖NVIDIA硬件和CUDA环境，更偏向通信系统研究。</li>
+                        </ul>
+                    </div>
+                    <div class="card p-8">
+                        <h4 class="text-2xl font-bold mb-4">Intel Embree - 高性能求交核心</h4>
+                        <p class="text-gray-600 mb-4">
+                            Intel开发的高性能光线追踪内核库，针对CPU进行了深度优化。它本身不是仿真器，而是提供射线与三维几何体求交计算的底层“发动机”。
+                        </p>
+                        <ul class="space-y-2 text-gray-700">
+                            <li class="flex items-start"><span class="text-blue-500 mr-2">✔️</span> <strong>优点:</strong> 极致的CPU求交性能，跨平台，易于集成到自定义C++/Python程序中。</li>
+                            <li class="flex items-start"><span class="text-red-500 mr-2">❌</span> <strong>局限:</strong> 仅处理几何计算，所有物理传播逻辑（反射、绕射等）需自行实现。</li>
+                        </ul>
+                    </div>
+                    <div class="card p-8">
+                        <h4 class="text-2xl font-bold mb-4">Mitsuba 3 - 可微分物理渲染</h4>
+                        <p class="text-gray-600 mb-4">
+                            一个以研究为导向、可微分的蒙特卡洛光线追踪渲染系统。其灵活的物理场景描述和可编程性使其具备了模拟复杂电磁波传播的潜力。
+                        </p>
+                        <ul class="space-y-2 text-gray-700">
+                           <li class="flex items-start"><span class="text-blue-500 mr-2">✔️</span> <strong>优点:</strong> 物理上极为精确，支持复杂材质，可微分特性为信道优化提供新思路。</li>
+                           <li class="flex items-start"><span class="text-red-500 mr-2">❌</span> <strong>局限:</strong> 为图形学设计，应用于无线仿真需大量改造，计算效率相对专用工具较低。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="data-acquisition" class="mb-24 scroll-mt-20">
+            <h2 class="text-4xl font-bold text-center mb-4 text-gray-800">三维数字地图及建模方案</h2>
+            <p class="text-center text-lg text-gray-600 max-w-3xl mx-auto mb-12">
+                仿真的精度直接取决于输入数据的质量。获取高精度的室外三维地图和室内建筑模型是项目成功的关键。以下是主流的免费或低成本获取方案，点击卡片查看详情。
+            </p>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="data-card card p-6 cursor-pointer" data-details="优点：全球覆盖，免费易得。<br>缺点：分辨率较低（通常为30-90米），不含建筑物信息。<br>适用：大范围、非城市区域的宏覆盖仿真。">
+                    <h3 class="text-xl font-semibold">室外地形：SRTM/ASTER GDEM</h3>
+                    <p class="text-sm text-gray-500 mt-2">航天飞机雷达地形测绘任务及高级星载热发射和反射辐射计全球数字高程模型。</p>
+                    <span class="tag bg-blue-100 text-blue-800 mt-4">免费</span>
+                    <span class="tag bg-gray-100 text-gray-800 mt-4">室外</span>
+                </div>
+                <div class="data-card card p-6 cursor-pointer" data-details="优点：包含丰富的矢量数据，部分城市有3D建筑轮廓，持续更新。<br>缺点：3D建筑数据覆盖不均，精度不一。<br>适用：城市环境仿真，可作为基础建筑数据源。">
+                    <h3 class="text-xl font-semibold">室外建筑：OpenStreetMap (OSM)</h3>
+                    <p class="text-sm text-gray-500 mt-2">一个开放的全球地图项目，通过社区协作提供地理数据，包括建筑物轮廓和高度。 </p>
+                    <span class="tag bg-blue-100 text-blue-800 mt-4">免费</span>
+                     <span class="tag bg-gray-100 text-gray-800 mt-4">室外</span>
+                </div>
+                <div class="data-card card p-6 cursor-pointer" data-details="优点：可获取高分辨率地形和建筑模型。<br>缺点：成本较高，数据处理复杂。<br>适用：对精度有极高要求的局部区域仿真。">
+                    <h3 class="text-xl font-semibold">室外精细：无人机倾斜摄影</h3>
+                    <p class="text-sm text-gray-500 mt-2">利用无人机从多个角度拍摄地物，通过软件三维重建生成高精度实景模型。</p>
+                     <span class="tag bg-yellow-100 text-yellow-800 mt-4">中-高成本</span>
+                     <span class="tag bg-gray-100 text-gray-800 mt-4">室外</span>
+                </div>
+                <div class="data-card card p-6 cursor-pointer" data-details="优点：数据结构化，包含材质信息，精度高。<br>缺点：模型获取依赖设计方，格式转换可能存在问题。<br>适用：已有BIM模型的现代建筑室内仿真。">
+                    <h3 class="text-xl font-semibold">室内建模：BIM模型</h3>
+                    <p class="text-sm text-gray-500 mt-2">建筑信息模型，不仅包含几何信息，还包含物理和功能特性，是理想的室内仿真数据源。</p>
+                    <span class="tag bg-green-100 text-green-800 mt-4">低成本 (若已有)</span>
+                     <span class="tag bg-gray-100 text-gray-800 mt-4">室内</span>
+                </div>
+                <div class="data-card card p-6 cursor-pointer" data-details="优点：获取门槛低，数据普遍。<br>缺点：仅2D信息，需手动三维化，工作量大，易出错。<br>适用：没有其他数据源时的基础建模方案。">
+                    <h3 class="text-xl font-semibold">室内建模：CAD图纸</h3>
+                    <p class="text-sm text-gray-500 mt-2">利用建筑的二维CAD平面图，通过Blender、SketchUp等工具手动拉伸创建三维模型。</p>
+                    <span class="tag bg-blue-100 text-blue-800 mt-4">免费</span>
+                     <span class="tag bg-gray-100 text-gray-800 mt-4">室内</span>
+                </div>
+                <div class="data-card card p-6 cursor-pointer" data-details="优点：快速生成高保真实景模型，自动化程度高。<br>缺点：设备和平台服务费用较高，模型需简化才能用于仿真。<br>适用：对现有复杂室内环境进行快速、高精度建模。">
+                    <h3 class="text-xl font-semibold">室内建模：3D扫描/激光雷达</h3>
+                    <p class="text-sm text-gray-500 mt-2">使用如Matterport、移动激光扫描仪等设备，快速捕捉室内空间的三维点云数据并生成模型。</p>
+                     <span class="tag bg-yellow-100 text-yellow-800 mt-4">中-高成本</span>
+                     <span class="tag bg-gray-100 text-gray-800 mt-4">室内</span>
+                </div>
+            </div>
+             <div id="data-details-popup" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+                <div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full relative">
+                    <button id="close-popup" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+                    <h3 id="popup-title" class="text-2xl font-bold mb-4"></h3>
+                    <div id="popup-content" class="text-gray-600"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="comparison" class="mb-24 scroll-mt-20">
+            <h2 class="text-4xl font-bold text-center mb-4 text-gray-800">综合对比分析</h2>
+            <p class="text-center text-lg text-gray-600 max-w-3xl mx-auto mb-12">
+                选择合适的工具和数据方案是项目成功的关键。下面的雷达图和对比表从多个维度对核心方案进行评估，帮助您做出明智决策。
+            </p>
+            
+            <div class="card p-8 mb-12">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4 md:mb-0">仿真工具能力雷达图</h3>
+                    <div class="flex items-center space-x-2">
+                        <label for="radar-select" class="text-sm font-medium text-gray-700">选择对比工具:</label>
+                        <select id="radar-select" class="w-full md:w-auto bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                            <option value="all" selected>全部显示</option>
+                            <option value="splat">仅 SPLAT!</option>
+                            <option value="pycraf">仅 Pycraf (扩展后)</option>
+                            <option value="sionna">仅 Sionna</option>
+                            <option value="custom">仅 室内射线追踪</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="comparisonRadarChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card p-8">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+                     <h3 class="text-2xl font-bold text-gray-800 mb-4 md:mb-0">方案优劣势对比表</h3>
+                     <div id="table-filters" class="flex space-x-2">
+                         <button data-filter="all" class="filter-btn bg-blue-500 text-white px-4 py-2 rounded-md">全部</button>
+                         <button data-filter="tool" class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-md">工具</button>
+                         <button data-filter="data" class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-md">数据</button>
+                     </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">方案</th>
+                                <th scope="col" class="px-6 py-3">优点</th>
+                                <th scope="col" class="px-6 py-3">缺点</th>
+                                <th scope="col" class="px-6 py-3">适用场景</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comparison-table">
+                            <tr class="bg-white border-b" data-category="tool">
+                                <td class="px-6 py-4 font-medium text-gray-900">SPLAT!</td>
+                                <td class="px-6 py-4">成熟稳定，计算快，上手简单</td>
+                                <td class="px-6 py-4">仅室外地形，不考虑建筑，模型单一</td>
+                                <td class="px-6 py-4">大范围郊区、山区的宏站覆盖分析</td>
+                            </tr>
+                             <tr class="bg-white border-b" data-category="tool">
+                                <td class="px-6 py-4 font-medium text-gray-900">Pycraf (扩展)</td>
+                                <td class="px-6 py-4">模型标准化，Python生态，扩展性强</td>
+                                <td class="px-6 py-4">需大量二次开发，非完整仿真工具</td>
+                                <td class="px-6 py-4">科研、定制化仿真平台开发</td>
+                            </tr>
+                             <tr class="bg-white border-b" data-category="tool">
+                                <td class="px-6 py-4 font-medium text-gray-900">Sionna (GPU RT)</td>
+                                <td class="px-6 py-4">GPU加速效率高，端到端链路仿真</td>
+                                <td class="px-6 py-4">依赖NVIDIA硬件，学习曲线陡峭</td>
+                                <td class="px-6 py-4">5G/6G通信系统，智能反射面等前沿研究</td>
+                            </tr>
+                             <tr class="bg-white border-b" data-category="tool">
+                                <td class="px-6 py-4 font-medium text-gray-900">自定义RT (Embree)</td>
+                                <td class="px-6 py-4">灵活性和可控性极高，针对性优化</td>
+                                <td class="px-6 py-4">开发工作量巨大，需深厚专业知识</td>
+                                <td class="px-6 py-4">特定场景的专用高精度仿真器开发</td>
+                            </tr>
+                             <tr class="bg-white border-b" data-category="tool">
+                                <td class="px-6 py-4 font-medium text-gray-900">室内射线追踪</td>
+                                <td class="px-6 py-4">精度高，能精细模拟反射、穿透</td>
+                                <td class="px-6 py-4">计算量巨大，对室内模型精度要求高</td>
+                                <td class="px-6 py-4">室内复杂环境（办公室、商场）的精细覆盖规划</td>
+                            </tr>
+                            <tr class="bg-white border-b" data-category="data">
+                                <td class="px-6 py-4 font-medium text-gray-900">SRTM + OSM</td>
+                                <td class="px-6 py-4">免费，全球覆盖，获取方便</td>
+                                <td class="px-6 py-4">精度有限，3D建筑数据不完整</td>
+                                <td class="px-6 py-4">城市区域仿真的初步评估和基础数据</td>
+                            </tr>
+                            <tr class="bg-white border-b" data-category="data">
+                                <td class="px-6 py-4 font-medium text-gray-900">BIM/CAD建模</td>
+                                <td class="px-6 py-4">数据结构化，精度高，信息丰富</td>
+                                <td class="px-6 py-4">依赖原始设计图纸，建模工作量大</td>
+                                <td class="px-6 py-4">精确的室内或楼宇级仿真</td>
+                            </tr>
+                            <tr class="bg-white border-b" data-category="data">
+                                <td class="px-6 py-4 font-medium text-gray-900">3D扫描/无人机</td>
+                                <td class="px-6 py-4">真实还原场景，自动化程度高</td>
+                                <td class="px-6 py-4">成本高，后期数据处理和简化复杂</td>
+                                <td class="px-6 py-4">高价值区域的精细化建模与仿真</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="workflow" class="scroll-mt-20">
+            <h2 class="text-4xl font-bold text-center mb-4 text-gray-800">综合研究与实施流程</h2>
+            <p class="text-center text-lg text-gray-600 max-w-3xl mx-auto mb-12">
+                一个成功的仿真项目需要系统性的规划和执行。我们提出一个六步走的标准化流程，帮助您从零开始构建一个完整的无线覆盖仿真项目。点击每个步骤查看详细说明。
+            </p>
+            <div class="space-y-4">
+                <div class="step-item border-l-4 border-gray-200 p-4 cursor-pointer transition-all duration-300">
+                    <h3 class="text-lg font-semibold flex justify-between items-center">
+                        <span>第一步：需求定义与场景分析</span>
+                        <span class="arrow text-2xl">▶</span>
+                    </h3>
+                    <div class="step-content text-gray-600 mt-2 pl-4 border-l border-gray-200">
+                        <p>明确仿真目标：是宏观覆盖预测还是微观场强分析？确定仿真区域：是城市、郊区还是室内？分析关键因素：主要考虑地形影响还是多径效应？这一步将决定后续技术选型的方向。</p>
+                    </div>
+                </div>
+                 <div class="step-item border-l-4 border-gray-200 p-4 cursor-pointer transition-all duration-300">
+                    <h3 class="text-lg font-semibold flex justify-between items-center">
+                        <span>第二步：数据采集与预处理</span>
+                        <span class="arrow text-2xl">▶</span>
+                    </h3>
+                    <div class="step-content text-gray-600 mt-2 pl-4 border-l border-gray-200">
+                        <p>根据场景选择合适的数据源。下载SRTM地形数据，从OpenStreetMap导出建筑轮廓，或对室内进行扫描建模。对采集到的原始数据进行格式转换、坐标统一、模型简化等预处理，使其符合仿真引擎的要求。</p>
+                    </div>
+                </div>
+                <div class="step-item border-l-4 border-gray-200 p-4 cursor-pointer transition-all duration-300">
+                    <h3 class="text-lg font-semibold flex justify-between items-center">
+                        <span>第三步：传播模型选择与校准</span>
+                        <span class="arrow text-2xl">▶</span>
+                    </h3>
+                    <div class="step-content text-gray-600 mt-2 pl-4 border-l border-gray-200">
+                        <p>室外大范围场景可选Longley-Rice模型。城市或室内精细场景需要引入射线追踪（Ray-Tracing）或特定经验模型（如Walfisch-Ikegami）。如果条件允许，可通过少量实测数据对模型参数进行校准，以提高仿真精度。</p>
+                    </div>
+                </div>
+                <div class="step-item border-l-4 border-gray-200 p-4 cursor-pointer transition-all duration-300">
+                    <h3 class="text-lg font-semibold flex justify-between items-center">
+                        <span>第四步：仿真引擎选择与开发</span>
+                        <span class="arrow text-2xl">▶</span>
+                    </h3>
+                    <div class="step-content text-gray-600 mt-2 pl-4 border-l border-gray-200">
+                        <p>对于标准室外场景，可直接使用SPLAT!。对于需要高度定制的场景，可基于Pycraf库进行二次开发，集成三维地图数据加载、射线生成与求交、传播模型计算等功能模块，构建自定义仿真引擎。</p>
+                    </div>
+                </div>
+                <div class="step-item border-l-4 border-gray-200 p-4 cursor-pointer transition-all duration-300">
+                    <h3 class="text-lg font-semibold flex justify-between items-center">
+                        <span>第五步：仿真执行与参数配置</span>
+                        <span class="arrow text-2xl">▶</span>
+                    </h3>
+                    <div class="step-content text-gray-600 mt-2 pl-4 border-l border-gray-200">
+                        <p>配置仿真参数，包括发射机位置、功率、天线方向图、频率等。设置接收机网格的分辨率。执行仿真计算。对于计算密集型任务（如射线追踪），可能需要高性能计算资源或采用并行计算技术。</p>
+                    </div>
+                </div>
+                <div class="step-item border-l-4 border-gray-200 p-4 cursor-pointer transition-all duration-300">
+                    <h3 class="text-lg font-semibold flex justify-between items-center">
+                        <span>第六步：结果可视化与验证分析</span>
+                        <span class="arrow text-2xl">▶</span>
+                    </h3>
+                    <div class="step-content text-gray-600 mt-2 pl-4 border-l border-gray-200">
+                        <p>将仿真的输出数据（如各点信号强度）以热力图的形式叠加到二维或三维地图上进行可视化。分析覆盖空洞、干扰区域等。若有条件，将仿真结果与实际路测数据进行对比验证，评估仿真模型的准确性并进行迭代优化。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <footer class="bg-white border-t mt-12">
+        <div class="container mx-auto px-6 py-4 text-center text-gray-600">
+            <p>&copy; 2025 无线覆盖仿真方案研究. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+            
+            mobileMenu.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+            });
+
+            const navLinks = document.querySelectorAll('header nav a');
+            const sections = document.querySelectorAll('main section');
+
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 100) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').substring(1) === current) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+
+            const dataCards = document.querySelectorAll('.data-card');
+            const popup = document.getElementById('data-details-popup');
+            const popupTitle = document.getElementById('popup-title');
+            const popupContent = document.getElementById('popup-content');
+            const closePopupButton = document.getElementById('close-popup');
+
+            dataCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    popupTitle.textContent = card.querySelector('h3').textContent;
+                    popupContent.innerHTML = card.dataset.details;
+                    popup.classList.remove('hidden');
+                    popup.classList.add('flex');
+                });
+            });
+
+            const closePopup = () => {
+                popup.classList.add('hidden');
+                popup.classList.remove('flex');
+            };
+
+            closePopupButton.addEventListener('click', closePopup);
+            popup.addEventListener('click', (event) => {
+                if (event.target === popup) {
+                    closePopup();
+                }
+            });
+
+            const radarData = {
+                labels: ['精度', '成本', '易用性', '计算效率', '扩展性', '场景普适性'],
+                datasets: [
+                    {
+                        label: 'SPLAT!',
+                        data: [6, 9, 8, 9, 3, 5],
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+                    },
+                    {
+                        label: 'Pycraf (扩展后)',
+                        data: [8, 7, 5, 6, 9, 7],
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                    },
+                    {
+                        label: 'Sionna',
+                        data: [9, 8, 4, 10, 8, 6],
+                        backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                        borderColor: 'rgba(255, 206, 86, 1)',
+                        pointBackgroundColor: 'rgba(255, 206, 86, 1)',
+                    },
+                    {
+                        label: '室内射线追踪',
+                        data: [9, 5, 4, 3, 7, 3],
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+                    }
+                ]
+            };
+
+            const radarCtx = document.getElementById('comparisonRadarChart').getContext('2d');
+            const radarChart = new Chart(radarCtx, {
+                type: 'radar',
+                data: radarData,
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { display: true },
+                            suggestedMin: 0,
+                            suggestedMax: 10,
+                            pointLabels: { font: { size: 14 } },
+                            ticks: { backdropColor: 'rgba(255, 255, 255, 0.75)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+
+            const radarSelect = document.getElementById('radar-select');
+            radarSelect.addEventListener('change', (e) => {
+                const value = e.target.value;
+                if (value === 'all') {
+                    radarChart.data.datasets = radarData.datasets;
+                } else if (value === 'splat') {
+                    radarChart.data.datasets = [radarData.datasets[0]];
+                } else if (value === 'pycraf') {
+                    radarChart.data.datasets = [radarData.datasets[1]];
+                } else if (value === 'sionna') {
+                    radarChart.data.datasets = [radarData.datasets[2]];
+                } else if (value === 'custom') {
+                    radarChart.data.datasets = [radarData.datasets[3]];
+                }
+                radarChart.update();
+            });
+
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            const tableRows = document.querySelectorAll('#comparison-table tr');
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    filterButtons.forEach(btn => {
+                        btn.classList.remove('bg-blue-500', 'text-white');
+                        btn.classList.add('bg-gray-200', 'text-gray-700');
+                    });
+                    button.classList.add('bg-blue-500', 'text-white');
+                    button.classList.remove('bg-gray-200', 'text-gray-700');
+
+                    const filter = button.dataset.filter;
+                    tableRows.forEach(row => {
+                        if (filter === 'all' || row.dataset.category === filter) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                });
+            });
+            
+            const stepItems = document.querySelectorAll('.step-item');
+            stepItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const content = item.querySelector('.step-content');
+                    const arrow = item.querySelector('.arrow');
+                    
+                    const isActive = item.classList.contains('active');
+                    
+                    stepItems.forEach(i => {
+                        i.classList.remove('active');
+                        i.querySelector('.step-content').classList.remove('show');
+                        i.querySelector('.arrow').style.transform = 'rotate(0deg)';
+                    });
+
+                    if (!isActive) {
+                        item.classList.add('active');
+                        content.classList.add('show');
+                        arrow.style.transform = 'rotate(90deg)';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+
