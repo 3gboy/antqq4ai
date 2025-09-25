@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能世界 2035 | 交互式报告</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony (Warm Neutrals, Muted Teal/Slate/Orange) -->
+    <!-- Application Structure Plan: 本应用采用主题式单页布局，而非报告的线性结构，旨在创造更佳的用户探索体验。结构包括：1. 概览区，以关键数据展示核心愿景；2. 三大核心板块导航，引导用户理解报告框架；3. 十大技术跃迁区，通过交互式卡片展示技术基石，避免信息过载；4. 行业变革仪表盘，用户可通过筛选器动态查看各行业受AI影响的关键数据和洞察，这是核心互动区；5. 人机共生区，以清晰的布局阐述伦理与可持续发展框架。此设计旨在将密集信息分解为易于消化的模块，并通过互动可视化提升用户参与感和理解深度。 -->
+    <!-- Visualization & Content Choices: 1. 关键预测数据 -> 目标: 告知/吸引 -> 方式: 大字体动态数字/HTML/CSS -> 互动: 页面加载时数字滚动 -> 理由: 快速传达变革的规模。 2. 十大技术 -> 目标: 组织/告知 -> 方式: 交互式卡片网格/HTML/Tailwind/JS -> 互动: 点击卡片展开详情 -> 理由: 使复杂列表更易浏览。 3. 行业影响数据 -> 目标: 比较/分析 -> 方式: 动态条形图 (Chart.js/Canvas) + 文本块 -> 互动: 点击行业按钮切换图表和文本内容 -> 理由: 核心互动功能，让用户按需探索数据，增强代入感。 4. AI向善框架 -> 目标: 告知 -> 方式: 结构化文本布局/HTML/Tailwind -> 互动: 无 -> 理由: 概念性内容，清晰的文本结构比图表更有效。所有图表均使用Chart.js，确保无SVG。 -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #fdfcf9;
+            color: #333;
+        }
+        .nav-link {
+            transition: color 0.3s, border-bottom-color 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #0d9488;
+            border-bottom-color: #0d9488;
+        }
+        .hero-stat-number {
+            font-size: 4rem;
+        }
+        @media (min-width: 768px) {
+            .hero-stat-number {
+                font-size: 6rem;
+            }
+        }
+        .card {
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .industry-btn {
+            transition: all 0.3s;
+        }
+        .industry-btn.active {
+            background-color: #0d9488;
+            color: white;
+            box-shadow: 0 4px 6px rgba(13, 148, 136, 0.2);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 450px;
+                max-height: 500px;
+            }
+        }
+        .leap-card-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+        .leap-card.open .leap-card-details {
+            max-height: 500px;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold text-teal-700">智能世界<span class="text-orange-500">2035</span></div>
+            <div class="hidden md:flex space-x-8">
+                <a href="#vision" class="nav-link font-medium pb-1">2035愿景</a>
+                <a href="#leaps" class="nav-link font-medium pb-1">十大技术跃迁</a>
+                <a href="#industries" class="nav-link font-medium pb-1">行业变革</a>
+                <a href="#symbiosis" class="nav-link font-medium pb-1">人机共生</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section id="vision" class="container mx-auto px-6 py-20 text-center">
+            <h1 class="text-4xl md:text-6xl font-bold leading-tight mb-4">迈向2035: 构建万物互联的智能世界</h1>
+            <p class="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-12">人工智能的未来在于走出数字世界，与物理世界深度融合。这不仅是单一技术的突破，而是技术、基础设施与应用场景协同演进的“共生乘数效应”，将深刻重塑我们的生产与生活。</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+                    <div class="hero-stat-number font-bold text-teal-600" data-target="100000">0</div>
+                    <p class="text-xl font-semibold mt-2">算力增长</p>
+                    <p class="text-gray-500 mt-1">倍 (对比2025年)</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+                    <div class="hero-stat-number font-bold text-orange-500" data-target="500">0</div>
+                    <p class="text-xl font-semibold mt-2">存储需求增长</p>
+                    <p class="text-gray-500 mt-1">倍 (对比2025年)</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+                    <div class="hero-stat-number font-bold text-slate-600" data-target="9000">0</div>
+                    <p class="text-xl font-semibold mt-2">智能体连接规模</p>
+                    <p class="text-gray-500 mt-1">亿 (服务90亿人口)</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white py-20">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4">智能世界的三大核心板块</h2>
+                    <p class="text-lg text-gray-600 max-w-2xl mx-auto">报告从技术基石、应用价值和社会伦理三个维度，层层递进地阐述了未来智能世界的构成。</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="text-center p-8 border border-gray-200 rounded-lg bg-slate-50">
+                        <div class="text-4xl text-teal-600 mb-4">🚀</div>
+                        <h3 class="text-2xl font-bold mb-2">与AI共进</h3>
+                        <p class="text-gray-600">探索支撑智能世界所需的十大颠覆性技术跃迁，它们是构建未来的技术基石。</p>
+                    </div>
+                    <div class="text-center p-8 border border-gray-200 rounded-lg bg-slate-50">
+                        <div class="text-4xl text-orange-500 mb-4">💼</div>
+                        <h3 class="text-2xl font-bold mb-2">与AI共赢</h3>
+                        <p class="text-gray-600">描绘智能技术在医疗、教育、制造等关键领域的应用，展示其创造的巨大社会价值。</p>
+                    </div>
+                    <div class="text-center p-8 border border-gray-200 rounded-lg bg-slate-50">
+                        <div class="text-4xl text-slate-600 mb-4">🤝</div>
+                        <h3 class="text-2xl font-bold mb-2">与AI共生</h3>
+                        <p class="text-gray-600">探讨智能世界面临的挑战与治理框架，强调以人为本，实现AI向善与可持续发展。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="leaps" class="container mx-auto px-6 py-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">与AI共进：通往智能世界的十大技术跃迁</h2>
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto">这是未来十年最具变革性的驱动力量。点击下方卡片，了解每一项技术如何重塑我们的世界。</p>
+            </div>
+            <div id="leaps-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </div>
+        </section>
+        
+        <section id="industries" class="bg-white py-20">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4">与AI共赢：加速生产与生活全场景跃迁</h2>
+                    <p class="text-lg text-gray-600 max-w-3xl mx-auto">智能技术正深入渗透到千行百业。选择一个领域，查看AI将如何带来革命性的变化和具体的量化指标。</p>
+                </div>
+                <div id="industry-selector" class="flex flex-wrap justify-center gap-2 md:gap-4 mb-8">
+                </div>
+                
+                <div class="bg-slate-50 p-6 md:p-8 rounded-xl border border-gray-200">
+                    <h3 id="industry-title" class="text-2xl font-bold text-center mb-6"></h3>
+                    <p id="industry-description" class="text-center text-gray-700 max-w-3xl mx-auto mb-8"></p>
+                    <div class="chart-container">
+                        <canvas id="industryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="symbiosis" class="container mx-auto px-6 py-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">与AI共生：构建可持续、安全与普惠的未来</h2>
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto">技术的发展必须以人为本。智能世界的最终目标是“AI向善”，确保技术红利被全人类共享，并解决其带来的伦理与安全挑战。</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                <div class="bg-white p-8 rounded-lg shadow-md border border-gray-100">
+                    <h3 class="text-2xl font-bold mb-4 text-slate-700">伦理与安全：将向善嵌入AI价值观</h3>
+                    <p class="text-gray-600 mb-4">构建可信赖的AI系统是前提。这需要一个覆盖基础设施、单智能体和多智能体协同的系统性安全框架，确保AI的决策逻辑透明、可解释、可追溯，并与人类价值观对齐。</p>
+                    <ul class="list-disc list-inside space-y-2 text-gray-700">
+                        <li>抗量子密码构建ICT基础设施安全</li>
+                        <li>单智能体全生命周期安全保障</li>
+                        <li>多智能体协同中的隐私保护与共识</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-8 rounded-lg shadow-md border border-gray-100">
+                    <h3 class="text-2xl font-bold mb-4 text-teal-700">AI普惠与可持续发展</h3>
+                    <p class="text-gray-600 mb-4">技术进步不应加剧数字鸿沟。通过技术与治理双管齐下，让AI像水电一样普惠可用，赋能教育、医疗等领域，助力全球可持续发展。同时，AI自身也必须是绿色的，通过节能算法和清洁能源解决其巨大的能耗问题。</p>
+                     <ul class="list-disc list-inside space-y-2 text-gray-700">
+                        <li>AI赋能教育公平与远程医疗</li>
+                        <li>AI优化能源网络，降低碳排放</li>
+                        <li>技术与治理结合，防止算法偏见</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-slate-800 text-white py-8">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2025 智能世界2035报告交互式解读。内容基于华为公司发布的公开报告。</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const reportData = {
+                leaps: [
+                    { title: "AGI走向物理世界", icon: "🌍", description: "当前AI缺乏对物理世界的深层推理能力。未来真正的突破将源于新的架构，实现数字世界与物理世界的深度融合，让AI理解并与现实互动。" },
+                    { title: "AI智能体驱动产业革命", icon: "🤖", description: "AI将从执行工具演进为能自主闭环执行多类任务的“决策伙伴”，成为重塑各行各业的新质生产力的核心，驱动产业智能化革命。" },
+                    { title: "人机协同重塑软件开发", icon: "💻", description: "未来软件开发将由人类设计师与AI执行者共同完成。开发入口从代码转向自然语言，开发流程将演变为人机协作流水线。" },
+                    { title: "全新的沉浸式交互体验", icon: "👁️", description: "人机交互将从二维平面升级至三维空间和多感官融合（视觉、听觉、触觉乃至脑机接口），创造虚实融合的“镜像世界”。" },
+                    { title: "从App走向多Agent协同", icon: "🔄", description: "移动互联网生态将从孤立的App，演变为以智能体为中心、多Agent协同完成复杂任务的新模式，实现“服务自动找人”。" },
+                    { title: "具身智能形成多个万亿产业", icon: "🚗", description: "AI与实体（如自动驾驶汽车、机器人、无人机）结合，将跨越技术鸿沟，催生智能驾驶、智能机器人和低空经济等巨大市场。" },
+                    { title: "突破冯诺依曼架构的新型算力", icon: "💡", description: "为满足未来10万倍的算力需求，计算技术将迎来历史性变革，在材料、架构、范式上全面创新，如存算一体、光计算、量子计算等。" },
+                    { title: "数据即智能，存储范式改变", icon: "💾", description: "存储将从“存数据”转向“存知识”，为AI智能体提供持续演进的“记忆”，支持长时程任务。AI数据占比将超70%。" },
+                    { title: "跃迁至智能体互联网", icon: "🌐", description: "网络连接的对象将从百亿人扩展到数千亿智能体，要求网络具备高实时、高智能的交互体验，实现万物超维互联。" },
+                    { title: "Token管理能源网络", icon: "⚡", description: "AI发展面临巨大能源挑战。未来AI将深度融入能源系统，像“神经系统”一样对每一焦耳能量进行精细化管理，促进绿色能源发展。" }
+                ],
+                industries: {
+                    "医疗": {
+                        title: "医疗：计算健康，防病于未然",
+                        description: "健康管理将从“以疾病为中心”转向“以健康全周期管理为核心”。AI与可穿戴设备使个体状态被实时感知与预测，推动健康管理从“被动治疗”转向“主动预防”。",
+                        labels: ["慢性病预防率", "远程医疗占比", "新药研发周期缩短"],
+                        data: [80, 60, 50],
+                        unit: "%"
+                    },
+                    "教育": {
+                        title: "教育：人机协同教学，惠及每个人成长",
+                        description: "AI将成为学生的“智能学伴”和教师的“孪生助手”，通过人机协同教学新模式，实现大规模因材施教，提升教育质量与公平。",
+                        labels: ["智慧教室升级率", "教师重复工作减少", "个性化学习普及率"],
+                        data: [80, 40, 75],
+                        unit: "%"
+                    },
+                     "制造": {
+                        title: "制造：设计即制造，制造即智能",
+                        description: "制造业将从“大规模标准化”迈向“大规模个性化”，并最终走向“服务化、智能化”。工业AI与具身智能将构建起新一代制造系统的技术基座。",
+                        labels: ["AI应用率", "劳动生产率提升", "产品缺陷率降低至"],
+                        data: [85, 60, 0.05],
+                        unit: "%"
+                    },
+                    "出行": {
+                        title: "出行：体验流动的“第三空间”",
+                        description: "L4/L5级自动驾驶将规模化应用，RoboTaxi将进化为流动的“第三空间”。出行即服务（MaaS）平台将智能调度所有交通工具，让出行成为一种可设计的体验。",
+                        labels: ["私人汽车出行减少", "通勤效率提升", "MaaS核心城市覆盖率"],
+                        data: [15, 30, 80],
+                        unit: "%"
+                    },
+                     "城市": {
+                        title: "城市：AI让城市焕发自进化的生命力",
+                        description: "城市将成为具备“自我感知、自主智能、自驱进化”的智能生命体。城市级AGI的雏形将显现，超级助理将成为支撑城市高效运转的关键基础设施。",
+                        labels: ["超级助理行业渗透率", "治理风险事件下降", "服务响应速度提升"],
+                        data: [82, 53, 70],
+                        unit: "%"
+                    },
+                    "金融": {
+                        title: "金融：AI重构金融生产力",
+                        description: "金融服务将从“服务重点用户”跃迁至“超个性化服务所有用户”。高度个性化的金融智能体将成为每个用户全天候、全生命周期的“金融知己”。",
+                        labels: ["智能体交易处理量(笔/秒)", "决策自主化率", "运营成本降低"],
+                        data: [100000, 90, 40],
+                        unit: "笔/秒或%"
+                    },
+                    "电力": {
+                        title: "电力：新能源主导，AI成为“神经系统”",
+                        description: "可再生能源发电量占比将突破50%，成为主力电源。AI将成为新型电力系统的“生存要件”，通过Token管理瓦特，实现更加动态和高效的电网。",
+                        labels: ["新能源发电量占比", "数据中心绿电供应率", "电网故障自愈率"],
+                        data: [50, 80, 99.9],
+                        unit: "%"
+                    }
+                }
+            };
+
+            const leapsGrid = document.getElementById('leaps-grid');
+            reportData.leaps.forEach(leap => {
+                const leapCard = document.createElement('div');
+                leapCard.className = 'leap-card bg-white p-6 rounded-lg border border-gray-200 cursor-pointer card';
+                leapCard.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <span class="text-3xl mr-4">${leap.icon}</span>
+                            <h3 class="text-xl font-bold text-gray-800">${leap.title}</h3>
+                        </div>
+                        <span class="text-2xl text-gray-400 transform transition-transform duration-300">&#9662;</span>
+                    </div>
+                    <div class="leap-card-details text-gray-600 mt-2">
+                        <p>${leap.description}</p>
+                    </div>
+                `;
+                leapsGrid.appendChild(leapCard);
+
+                leapCard.addEventListener('click', () => {
+                    const currentlyOpen = document.querySelector('.leap-card.open');
+                    if(currentlyOpen && currentlyOpen !== leapCard) {
+                        currentlyOpen.classList.remove('open');
+                        currentlyOpen.querySelector('.text-2xl.text-gray-400').style.transform = 'rotate(0deg)';
+                    }
+                    leapCard.classList.toggle('open');
+                    const arrow = leapCard.querySelector('.text-2xl.text-gray-400');
+                    arrow.style.transform = leapCard.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
+                });
+            });
+
+            const industrySelector = document.getElementById('industry-selector');
+            const industryTitle = document.getElementById('industry-title');
+            const industryDescription = document.getElementById('industry-description');
+            const ctx = document.getElementById('industryChart').getContext('2d');
+            let industryChart;
+
+            function updateIndustryView(industryKey) {
+                const industry = reportData.industries[industryKey];
+                
+                industryTitle.textContent = industry.title;
+                industryDescription.textContent = industry.description;
+
+                document.querySelectorAll('.industry-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector(`.industry-btn[data-industry="${industryKey}"]`).classList.add('active');
+
+                const chartData = {
+                    labels: industry.labels,
+                    datasets: [{
+                        label: `${industryKey} 2035年预测指标`,
+                        data: industry.data,
+                        backgroundColor: ['#14b8a6', '#f97316', '#64748b', '#3b82f6', '#8b5cf6', '#ec4899'],
+                        borderColor: 'rgba(255, 255, 255, 0.8)',
+                        borderWidth: 2,
+                        borderRadius: 5,
+                    }]
+                };
+
+                if (industryChart) {
+                    industryChart.data = chartData;
+                    industryChart.options.plugins.tooltip.callbacks.label = function(context) {
+                        let label = context.dataset.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        if (context.parsed.y !== null) {
+                            label += context.parsed.y + (industry.unit === '%' || industry.unit.includes('%') ? '%' : '');
+                        }
+                        return label;
+                    };
+                    industryChart.update();
+                } else {
+                    industryChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: chartData,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            indexAxis: 'y',
+                            scales: {
+                                x: {
+                                    beginAtZero: true,
+                                    grid: {
+                                        color: 'rgba(200, 200, 200, 0.2)'
+                                    }
+                                },
+                                y: {
+                                    grid: {
+                                        display: false
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.dataset.label || '';
+                                            if (label) {
+                                                label += ': ';
+                                            }
+                                            if (context.parsed.x !== null) {
+                                               let value = context.parsed.x;
+                                               if (industry.unit === "%") {
+                                                  label += `${value}%`;
+                                               } else if (industry.unit.includes("笔/秒")) {
+                                                   label += context.raw.toLocaleString() + " 笔/秒";
+                                               } else if (industry.unit.includes("%") && industryKey==="制造" && context.label.includes("缺陷率")) {
+                                                   label += `${value}%`;
+                                               }
+                                               else {
+                                                   label += value;
+                                               }
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            Object.keys(reportData.industries).forEach(key => {
+                const button = document.createElement('button');
+                button.className = 'industry-btn px-4 py-2 rounded-full font-medium bg-white border-2 border-gray-200 text-gray-700 hover:bg-teal-500 hover:text-white hover:border-teal-500';
+                button.textContent = key;
+                button.dataset.industry = key;
+                button.addEventListener('click', () => updateIndustryView(key));
+                industrySelector.appendChild(button);
+            });
+
+            const firstIndustry = Object.keys(reportData.industries)[0];
+            updateIndustryView(firstIndustry);
+            
+            const counters = document.querySelectorAll('.hero-stat-number');
+            const speed = 200;
+            const animateCounters = () => {
+                counters.forEach(counter => {
+                    const updateCount = () => {
+                        const target = +counter.getAttribute('data-target');
+                        const count = +counter.innerText;
+                        const inc = Math.ceil(target / speed);
+                        if (count < target) {
+                            counter.innerText = Math.min(count + inc, target);
+                            setTimeout(updateCount, 10);
+                        } else {
+                            counter.innerText = target.toLocaleString();
+                        }
+                    };
+                    updateCount();
+                });
+            };
+            
+            const observer = new IntersectionObserver((entries) => {
+                if(entries[0].isIntersecting) {
+                    animateCounters();
+                    observer.unobserve(counters[0]);
+                }
+            }, { threshold: 0.5 });
+            observer.observe(counters[0]);
+            
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>
