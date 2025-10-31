@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>沃丰科技 AI智能体 深度分析</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Analyst's Desk (Light Gray/Amber, Dark Gray Text, Muted Teal Accent) -->
+    <!-- Application Structure Plan: A tab-based SPA. A top navigation bar (Overview, Products, Tech, Use Cases, Competition, Roadmap) controls the main content area. This structure is chosen because an analyst report has distinct, deep sections. A tabbed approach allows the user to focus on one section at a time (e.g., "Tech" or "Competition") without overwhelming them with a single, long scroll. It mirrors how an analyst would "flip" between sections of a binder. Interactions include sub-tabs for products and a dropdown filter for industry use cases, making exploration non-linear and user-driven. -->
+    <!-- Visualization & Content Choices: 
+        - Overview: Key stats presented as "Key Performance Indicators" (KPIs) in large-font boxes (HTML/Tailwind) for quick impact.
+        - Products: A horizontal sub-tab system (JS-driven) to switch between "Service," "Sales," and "Internal" agents. Goal: Compare functions. Method: HTML/JS content switching.
+        - Tech: A Doughnut chart (Chart.js) showing the "Tech Stack" (LLMs, NLP, RPA, etc.). Goal: Inform on composition. A simple flexbox diagram (HTML/Tailwind) to illustrate the "Multi-Model Architecture." Goal: Organize/Explain.
+        - Use Cases: A <select> dropdown (HTML/JS) to filter use cases by industry. Goal: Relate. Method: JS hides/shows relevant content blocks.
+        - Competition: A Radar chart (Chart.js) comparing WoFeng to Cloud Giants on key features (e.g., "Industry Data," "Model Agnosticism," "Infra"). Goal: Compare. Method: Chart.js.
+        - Roadmap: A simple ordered list/timeline (HTML/Tailwind). Goal: Inform on change.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            background-color: #fdfcf9;
+            color: #1f2937;
+        }
+        .nav-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            color: #374151;
+            white-space: nowrap;
+        }
+        .nav-btn.active, .nav-btn:hover {
+            background-color: #0d9488;
+            color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .tab-content {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .product-tab-btn {
+            padding: 8px 16px;
+            border-radius: 6px 6px 0 0;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .product-tab-btn.active {
+            color: #0d9488;
+            border-bottom-color: #0d9488;
+        }
+        .product-tab-content {
+            display: none;
+        }
+        .product-tab-content.active {
+            display: block;
+        }
+        .chart-container {
+            position: relative;
+            height: 350px;
+            max-height: 400px;
+            width: 100%;
+            max-width: 500px;
+            margin: 24px auto;
+        }
+        .kpi-card {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            transition: all 0.3s ease;
+        }
+        .kpi-card:hover {
+            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+            transform: translateY(-2px);
+        }
+        .tech-diagram-box {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container max-w-7xl mx-auto p-4 md:p-8">
+        
+        <header class="flex flex-col md:flex-row justify-between md:items-center pb-6 border-b-2 border-gray-200">
+            <h1 class="text-3xl font-bold text-teal-800 mb-4 md:mb-0">沃丰科技 (WoFeng) AI智能体 深度分析</h1>
+            <span class="text-sm text-gray-500">分析时间: 2025年10月</span>
+        </header>
+
+        <nav class="mt-6 mb-8">
+            <ul class="flex flex-wrap gap-2 md:gap-4">
+                <li><button class="nav-btn active" data-tab="overview">概览与洞察</button></li>
+                <li><button class="nav-btn" data-tab="products">产品矩阵</button></li>
+                <li><button class="nav-btn" data-tab="tech">技术架构</button></li>
+                <li><button class="nav-btn" data-tab="usecases">应用场景</button></li>
+                <li><button class="nav-btn" data-tab="competition">竞争格局</button></li>
+                <li><button class="nav-btn" data-tab="roadmap">未来战略</button></li>
+            </ul>
+        </nav>
+
+        <main id="content-container">
+            
+            <div id="tab-overview" class="tab-content">
+                <p class="text-lg text-gray-700 mb-6 leading-relaxed">
+                    本报告深入分析沃丰科技 (WoFeng Technology) 及其以 "GaGa" 平台为核心的AI智能体 (AI Agent) 产品线。沃丰科技正凭借其在B2B SaaS领域（特别是客服和销售）十余年积累的深厚行业知识与海量专有数据，战略性地从SaaS服务商向“企业级AI智能体平台”提供商转型。其核心竞争力不在于构建基础大模型，而在于构建一个“模型无关”的应用层，为企业提供真正能解决业务问题的、低成本、高效率的AI解决方案。
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="kpi-card">
+                        <h3 class="text-sm font-semibold text-gray-500 uppercase mb-2">核心定位</h3>
+                        <p class="text-2xl font-bold text-teal-700">企业级AI应用层领跑者</p>
+                    </div>
+                    <div class="kpi-card">
+                        <h3 class="text-sm font-semibold text-gray-500 uppercase mb-2">关键优势</h3>
+                        <p class="text-2xl font-bold text-teal-700">海量行业数据 + 多模型架构</p>
+                    </div>
+                    <div class="kpi-card">
+                        <h3 class="text-sm font-semibold text-gray-500 uppercase mb-2">重点服务行业</h3>
+                        <p class="text-2xl font-bold text-teal-700">金融、电商、汽车、科技</p>
+                    </div>
+                </div>
+                
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">核心洞察 (Key Insights)</h2>
+                <ul class="list-disc list-inside space-y-3 text-gray-700">
+                    <li class="pl-2"><strong class="font-semibold text-gray-900">数据护城河：</strong> 沃丰（通过Udesk等）积累了千亿级的真实B2C交互数据。这是其AI Agent在理解行业意图、生成专业回复方面远超通用模型的关键。</li>
+                    <li class="pl-2"><strong class="font-semibold text-gray-900">“模型无关”的务实主义：</strong> GaGa平台采用多模型调度架构，不与任何单一基础模型绑定。这使其能为客户灵活选择最高性价比的模型（如百度文心、阿里通义、智谱清言等），降低企业对特定厂商的依赖和成本。</li>
+                    <li class="pl-2"><strong class="font-semibold text-gray-900">工作流原生 (Workflow-Native)：</strong> 沃丰的Agent不是“外挂”功能，而是深度嵌入其Udesk（客服）、SalesGo（SFA）等现有SaaS产品的工作流中。这使其能真正执行任务（如自动创建工单、更新CRM），而不只是“聊天”。</li>
+                    <li class="pl-2"><strong class="font-semibold text-gray-900">从“辅助”到“自主”：</strong> 产品演进路径清晰，正从辅助人工的“Copilot”（如智能摘要、话术推荐）向可独立完成任务的“Agent”（如全自动质检、自主外呼）进化。</li>
+                </ul>
+            </div>
+
+            <div id="tab-products" class="tab-content hidden">
+                <p class="text-lg text-gray-700 mb-6 leading-relaxed">
+                    沃丰科技的AI智能体并非孤立产品，而是深度集成于其三大SaaS产品线（Udesk、SalesGo、ServiceGo）的“GaGa AI平台”。这些智能体被设计为特定角色的“数字员工”，专注于解决具体的业务场景。
+                </p>
+                
+                <div class="mb-6 border-b border-gray-200">
+                    <nav class="-mb-px flex gap-6" aria-label="Tabs">
+                        <button class="product-tab-btn active" data-tab="service">客户服务智能体</button>
+                        <button class="product-tab-btn" data-tab="sales">销售SFA智能体</button>
+                        <button class="product-tab-btn" data-tab="internal">内部员工智能体</button>
+                    </nav>
+                </div>
+
+                <div id="product-service" class="product-tab-content active">
+                    <h3 class="text-xl font-bold text-teal-700 mb-3">客户服务智能体 (集成于 Udesk)</h3>
+                    <p class="mb-4">定位：7x24小时的“超级客服”与“金牌质检员”，旨在提升服务效率、保障合规并优化客户体验。</p>
+                    <ul class="list-disc list-inside space-y-2 text-gray-700">
+                        <li><strong class="font-semibold">智能路由与IVR：</strong> 基于意图识别，准确分发客户请求至最佳Agent或人工。</li>
+                        <li><strong class="font-semibold">AI服务机器人：</strong> 独立接待客户，解决高频重复性问题，支持多轮对话。</li>
+                        <li><strong class="font-semibold">坐席辅助 (Copilot)：</strong> 为人工坐席实时推荐标准答案、总结通话内容、分析客户情绪。</li>
+                        <li><strong class="font-semibold">全量智能质检：</strong> 100%覆盖所有服务对话（文本、语音），自动检测服务合规性、态度、流程执行情况。</li>
+                        <li><strong class="font-semibold">工单自动小结：</strong> 对话结束后自动生成结构化的服务摘要和工单，节省人工录入时间。</li>
+                    </ul>
+                </div>
+                
+                <div id="product-sales" class="product-tab-content">
+                    <h3 class="text-xl font-bold text-teal-700 mb-3">销售SFA智能体 (集成于 SalesGo)</h3>
+                    <p class="mb-4">定位：“金牌销售助理”，旨在解放销售生产力，让销售人员专注于“人”的沟通，同时提升转化率。</p>
+                    <ul class="list-disc list-inside space-y-2 text-gray-700">
+                        <li><strong class="font-semibold">通话自动小结：</strong> 自动转录销售通话，并提炼关键信息（客户需求、异议点、后续行动）。</li>
+                        <li><strong class="font-semibold">CRM自动录入：</strong> 根据通话小结，自动创建或更新CRM中的商机、联系人信息和跟进记录。</li>
+                        <li><strong class="font-semibold">智能外呼陪练：</strong> 模拟真实客户与销售进行对话练习，提供实时反馈和改进建议。</li>
+                        <li><strong class="font-semibold">商机洞察：</strong> 自动分析客户意图，识别高价值线索，并向销售推送跟进提醒。</li>
+                        <li><strong class="font-semibold">邮件自动撰写：</strong> 根据沟通背景，自动生成专业的客户跟进邮件。</li>
+                    </ul>
+                </div>
+
+                <div id="product-internal" class="product-tab-content">
+                    <h3 class="text-xl font-bold text-teal-700 mb-3">内部员工智能体 (企业助理)</h3>
+                    <p class="mb-4">定位：“全能型内部助理”，旨在打通企业内部信息孤岛，自动化繁琐流程，提升全体员工的工作效率。</p>
+                    <ul class="list-disc list-inside space-y-2 text-gray-700">
+                        <li><strong class="font-semibold">企业知识库问答：</strong> 连接企业内部文档（HR政策、产品手册、IT指南），提供精准的内部“搜索”与问答。</li>
+                        <li><strong class="font-semibold">文档/会议摘要：</strong> 快速总结长篇文档、会议录音，提炼核心要点。</li>
+                        <li><strong class="font-semibold">流程自动化 (RPA)：</strong> 跨系统执行任务，如“帮我预订下午去上海的机票和酒店”或“提交这份报销申请”。</li>
+                        <li><strong class="font-semibold">数据分析助手：</strong> 通过自然语言查询业务数据，如“查询上季度华东区的销售额”。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div id="tab-tech" class="tab-content hidden">
+                <p class="text-lg text-gray-700 mb-6 leading-relaxed">
+                    沃丰的AI Agent技术架构核心是其“GaGa”AI平台。该平台不是一个基础大模型，而是一个复杂的“智能体编排与调度”系统，它整合了多种AI能力，以适配企业复杂的业务需求。
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">关键技术栈构成</h2>
+                        <div class="chart-container">
+                            <canvas id="techStackChart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">核心架构：GaGa多模型调度平台</h2>
+                        <div class="flex flex-col space-y-4 p-4">
+                            <div class="tech-diagram-box text-blue-600">
+                                <span class="font-mono text-sm">[第三方基础大模型]</span><br>
+                                文心一言、通义千问、智谱GLM、GPT等
+                            </div>
+                            <div class="flex justify-center text-3xl text-gray-500">↓</div>
+                            <div class="tech-diagram-box text-teal-700 border-2 border-teal-500">
+                                <span class="font-mono text-sm">[沃丰 GaGa AI 平台]</span><br>
+                                智能调度、提示工程、RAG、数据精调
+                            </div>
+                            <div class="flex justify-center text-3xl text-gray-500">↓</div>
+                            <div class="tech-diagram-box text-gray-700">
+                                <span class="font-mono text-sm">[沃丰传统AI能力 (NLP/KG/RPA)]</span><br>
+                                意图识别、知识图谱、流程自动化
+                            </div>
+                            <div class="flex justify-center text-3xl text-gray-500">↓</div>
+                            <div class="tech-diagram-box text-purple-600">
+                                <span class="font-mono text-sm">[企业应用层]</span><br>
+                                客服Agent、销售Agent、员工Agent
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-usecases" class="tab-content hidden">
+                <p class="text-lg text-gray-700 mb-6 leading-relaxed">
+                    沃丰的AI智能体已在多个行业落地，专注于解决高频、高价值的业务痛点。其核心价值在于将AI技术与具体的业务流程（Workflow）相结合，产生可量化的ROI。
+                </p>
+                
+                <div class="mb-6 max-w-sm">
+                    <label for="industry-filter" class="block text-sm font-medium text-gray-700 mb-2">按行业筛选应用场景:</label>
+                    <select id="industry-filter" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white">
+                        <option value="all">所有行业</option>
+                        <option value="finance">金融 (银行/保险)</option>
+                        <option value="ecommerce">电商零售</option>
+                        <option value="auto">汽车</option>
+                        <option value="tech">互联网科技</option>
+                    </select>
+                </div>
+
+                <div id="usecases-content" class="space-y-6">
+                    <div class="usecase-item p-6 bg-white rounded-lg border border-gray-200 shadow-sm" data-industry="finance">
+                        <h3 class="text-xl font-bold text-gray-800 mb-3">金融 (银行/保险)</h3>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700">
+                            <li><strong class="font-semibold">业务痛点：</strong> 客户咨询量大、合规要求极高、产品复杂（理财、保险条款）。</li>
+                            <li><strong class="font-semibold">Agent应用：</strong> 
+                                <ol class="list-decimal list-inside ml-4 mt-1 space-y-1">
+                                    <li><span class="font-semibold text-teal-700">[合规质检Agent]</span> 对100%的理财产品销售录音进行全量质检，自动识别“误导销售”、“承诺收益”等违规话术。</li>
+                                    <li><span class="font-semibold text-teal-700">[智能IVR导航]</span> 客户来电时，通过多轮对话精准理解客户办理“信用卡挂失”或“贷款咨询”的意图，直达业务节点。</li>
+                                    <li><span class="font-semibold text-teal-700">[坐席辅助]</span> 在客户咨询复杂保险条款时，实时为坐席推荐标准、合规的解释口径。</li>
+                                </ol>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="usecase-item p-6 bg-white rounded-lg border border-gray-200 shadow-sm" data-industry="ecommerce">
+                        <h3 class="text-xl font-bold text-gray-800 mb-3">电商零售</h3>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700">
+                            <li><strong class="font-semibold">业务痛点：</strong> 618、双11大促期间服务量瞬时暴增，物流、售后问题高度集中。</li>
+                            <li><strong class="font-semibold">Agent应用：</strong>
+                                <ol class="list-decimal list-inside ml-4 mt-1 space-y-1">
+                                    <li><span class="font-semibold text-teal-700">[物流查询Agent]</span> 自动对接ERP和物流系统，7x24小时处理“我的快递到哪了”等海量查询。</li>
+                                    <li><span class="font-semibold text-teal-700">[智能退换货Agent]</span> 引导客户自助完成退换货申请、上传凭证、生成退货单，全流程自动化。</li>
+                                    <li><strong class="font-semibold text-teal-700">[工单自动小结]</strong> 大促后海量售后工单，Agent自动读取对话并归类（如“商品破损”、“发错货”），极大提升处理效率。</li>
+                                </ol>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="usecase-item p-6 bg-white rounded-lg border border-gray-200 shadow-sm" data-industry="auto">
+                        <h3 class="text-xl font-bold text-gray-800 mb-3">汽车</h3>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700">
+                            <li><strong class="font-semibold">业务痛点：</strong> 客户生命周期长（售前咨询、试驾、售后维保），数据分散在SFA、DMS、Call Center。</li>
+                            <li><strong class="font-semibold">Agent应用：</strong>
+                                <ol class="list-decimal list-inside ml-4 mt-1 space-y-1">
+                                    <li><span class="font-semibold text-teal-700">[试驾邀约Agent]</span> 自动对外呼线索进行跟进，筛选高意向客户，并自动在SFA系统中预约试驾。</li>
+                                    <li><span class="font-semibold text-teal-700">[维保提醒Agent]</span> 自动根据DMS系统数据，向即将到达保养周期的车主发送提醒，并协助其预约工位。</li>
+                                    <li><span class="font-semibold text-teal-700">[销售助理Agent]</span> 自动将销售与客户的通话录音，转写并更新到SFA商机跟进记录中。</li>
+                                </ol>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="usecase-item p-6 bg-white rounded-lg border border-gray-200 shadow-sm" data-industry="tech">
+                        <h3 class="text-xl font-bold text-gray-800 mb-3">互联网科技 (SaaS/云计算)</h3>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700">
+                            <li><strong class="font-semibold">业务痛点：</strong> 产品技术性强、文档复杂、客户问题专业性高。</li>
+                            <li><strong class="font-semibold">Agent应用：</strong>
+                                <ol class="list-decimal list-inside ml-4 mt-1 space-y-1">
+                                    <li><span class="font-semibold text-teal-700">[技术支持Agent]</span> 对接海量API文档和技术手册，为开发者提供7x24小时的“L1级”技术支持问答。</li>
+                                    <li><strong class="font-semibold text-teal-700">[新员工培训Agent]</strong> 作为内部知识库，帮助新入职的销售和客服快速学习复杂的产品知识。</li>
+                                </ol>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-competition" class="tab-content hidden">
+                <p class="text-lg text-gray-700 mb-6 leading-relaxed">
+                    沃丰科技处于一个“合作与竞争”并存的复杂格局中。其竞争对手既包括提供基础大模型的云巨头，也包括其他SaaS应用厂商。沃丰的核心壁垒在于其“数据+工作流”的深度融合。
+                </p>
+                
+                <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">能力对比：沃丰 vs 基础大模型厂商</h2>
+                <div class="chart-container">
+                    <canvas id="compChart"></canvas>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
+                    <div class="p-6 bg-green-50 rounded-lg border border-green-200">
+                        <h3 class="text-xl font-bold text-green-800 mb-3">独特竞争优势 (Advantages)</h3>
+                        <ul class="list-disc list-inside space-y-2 text-green-700">
+                            <li><strong class="font-semibold">专有数据壁垒：</strong> 10+年积累的千亿级、高质量、经过标注的行业交互数据，用于精调（Fine-tuning）的模型效果远超通用模型。</li>
+                            <li><strong class="font-semibold">深度工作流集成：</strong> AI Agent“原生”于Udesk和SalesGo，能读写CRM、ERP、工单系统，真正执行任务，而非停留在“聊天”。</li>
+                            <li><strong class="font-semibold">模型无关性：</strong> GaGa平台使客户不被单一LLM“绑架”，可灵活切换至成本更低、效果更好的模型，保持中立性。</li>
+                            <li><strong class="font-semibold">现有客户基础：</strong> 庞大的存量SaaS客户（如Udesk的数万家企业）是AI Agent产品最直接的增量市场，获客成本低。</li>
+                        </ul>
+                    </div>
+                    <div class="p-6 bg-red-50 rounded-lg border border-red-200">
+                        <h3 class="text-xl font-bold text-red-800 mb-3">明显短板/挑战 (Disadvantages)</h3>
+                        <ul class="list-disc list-inside space-y-2 text-red-700">
+                            <li><strong class="font-semibold">无基础模型：</strong> 核心能力依赖于合作伙伴（百度、阿里、智谱等）。若上游厂商决定“下场”深入应用层，将构成直接威胁。</li>
+                            <li><strong class="font-semibold">品牌认知：</strong> 市场长期将其视为“客服软件”公司。要树立“AI平台”的高端技术形象，需要时间重塑品牌认知。</li>
+                            <li><strong class="font-semibold">集成复杂性：</strong> AI Agent要深入企业内部，需要对接复杂的遗留系统（Legacy System），项目交付和定制化压力大。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-roadmap" class="tab-content hidden">
+                <p class="text-lg text-gray-700 mb-6 leading-relaxed">
+                    沃丰科技正全力加速其AI Agent战略，从SaaS向“AI+SaaS”转型。其路线图清晰地指向了更高级别的自动化和智能化，目标是成为企业不可或缺的“数字劳动力”平台。
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="p-6 bg-white rounded-lg border border-gray-200 shadow-sm">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4">近期动态 (2024-2025)</h2>
+                        <ul class="list-disc list-inside space-y-3 text-gray-700">
+                            <li><strong>发布GaGa AI平台：</strong> 正式推出其多模型、企业级的AI Agent核心平台。</li>
+                            <li><strong>深化LLM合作：</strong> 与百度（文心）、智谱AI（GLM）等国内主流大模型厂商建立深度战略合作，确保模型供给的多样性。</li>
+                            <li><strong>标杆案例落地：</strong> 宣布在金融、汽车等行业（如北京银行、理想汽车）的AI Agent成功落地，展示可量化的业务价值（如服务效率提升30%，质检覆盖率100%）。</li>
+                            <li><strong>产品全面AI化：</strong> 将AI Agent能力全线注入Udesk、SalesGo、ServiceGo，完成从“功能”到“智能”的升级。</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-6 bg-teal-50 rounded-lg border border-teal-200">
+                        <h2 class="text-xl font-bold text-teal-800 mb-4">未来战略路线图 (Roadmap)</h2>
+                        <ol class="relative border-l border-teal-300 space-y-6 pl-6">
+                            <li class="relative">
+                                <span class="absolute -left-3 flex items-center justify-center w-6 h-6 bg-teal-500 rounded-full ring-4 ring-white">
+                                    <span class="text-white text-xs font-bold">1</span>
+                                </span>
+                                <h3 class="text-lg font-semibold text-teal-900">阶段一：深度集成 (Deep Integration)</h3>
+                                <p class="text-teal-800">将Agent无缝嵌入SaaS产品的每一个工作流节点，实现全面的“辅助智能” (Copilot)。</p>
+                            </li>
+                            <li class="relative">
+                                <span class="absolute -left-3 flex items-center justify-center w-6 h-6 bg-teal-500 rounded-full ring-4 ring-white">
+                                    <span class="text-white text-xs font-bold">2</span>
+                                </span>
+                                <h3 class="text-lg font-semibold text-teal-900">阶段二：主动智能 (Proactive Agent)</h3>
+                                <p class="text-teal-800">Agent从“被动响应”转向“主动触发”。例如：主动识别即将流失的客户并提醒SDR；主动发现销售流程中的卡点并提出建议。</p>
+                            </li>
+                            <li class="relative">
+                                <span class="absolute -left-3 flex items-center justify-center w-6 h-6 bg-teal-500 rounded-full ring-4 ring-white">
+                                    <span class="text-white text-xs font-bold">3</span>
+                                </span>
+                                <h3 class="text-lg font-semibold text-teal-900">阶段三：自主智能体 (Autonomous Agent)</h3>
+                                <p class="text-teal-800">实现“数字员工”的终极形态。Agent可被赋予一个目标（如“处理完本月所有A类投诉”），并能自主规划、调用工具、跨系统执行，直至完成任务。</p>
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const chartJsConfig = {
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#374151',
+                            font: {
+                                family: "'Inter', 'Noto Sans SC', sans-serif",
+                                size: 13
+                            }
+                        }
+                    },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: '#ffffff',
+                        titleColor: '#1f2937',
+                        bodyColor: '#374151',
+                        borderColor: '#e5e7eb',
+                        borderWidth: 1,
+                        padding: 10,
+                        bodyFont: {
+                            family: "'Inter', 'Noto Sans SC', sans-serif"
+                        },
+                        titleFont: {
+                            family: "'Inter', 'Noto Sans SC', sans-serif",
+                            weight: 'bold'
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.r !== undefined) {
+                                     label += context.parsed.r;
+                                } else {
+                                     label += context.parsed + '%';
+                                }
+                                return ' ' + label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    r: {
+                        angleLines: {
+                            color: '#e5e7eb'
+                        },
+                        grid: {
+                            color: '#e5e7eb'
+                        },
+                        pointLabels: {
+                            color: '#374151',
+                            font: {
+                                family: "'Inter', 'Noto Sans SC', sans-serif",
+                                size: 13
+                            },
+                            formatter: (label) => {
+                                if (label.length > 16) {
+                                    return label.match(/.{1,16}/g) || [];
+                                }
+                                return label;
+                            }
+                        },
+                        ticks: {
+                            color: '#374151',
+                            backdropColor: 'rgba(255, 255, 255, 0.7)',
+                            font: {
+                                size: 10
+                            }
+                        }
+                    }
+                }
+            };
+            
+            let techStackChartInstance = null;
+            let compChartInstance = null;
+
+            function initTechChart() {
+                const ctx = document.getElementById('techStackChart');
+                if (!ctx) return;
+                
+                if (techStackChartInstance) {
+                    techStackChartInstance.destroy();
+                }
+
+                techStackChartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['多模型调度 (LLM)', 'NLP (意图识别)', 'RPA (流程自动化)', '知识图谱 (KG)', '数据精调 (Fine-tune)'],
+                        datasets: [{
+                            label: '技术栈占比',
+                            data: [30, 25, 15, 15, 15],
+                            backgroundColor: [
+                                '#0d9488', // teal-600
+                                '#047857', // emerald-700
+                                '#059669', // emerald-600
+                                '#34d399', // emerald-400
+                                '#6ee7b7'  // emerald-300
+                            ],
+                            borderColor: '#fdfcf9',
+                            borderWidth: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '60%',
+                        plugins: chartJsConfig.plugins
+                    }
+                });
+            }
+
+            function initCompChart() {
+                const ctx = document.getElementById('compChart');
+                if (!ctx) return;
+
+                if (compChartInstance) {
+                    compChartInstance.destroy();
+                }
+                
+                compChartInstance = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['行业专有数据', '模型无关性', '工作流深度', '底层算力/模型', 'SaaS客户基础'],
+                        datasets: [
+                            {
+                                label: '沃丰科技 (WoFeng)',
+                                data: [9, 9, 8, 4, 9],
+                                fill: true,
+                                backgroundColor: 'rgba(13, 148, 136, 0.2)',
+                                borderColor: '#0d9488',
+                                pointBackgroundColor: '#0d9488',
+                                pointBorderColor: '#fff',
+                                pointHoverBackgroundColor: '#fff',
+                                pointHoverBorderColor: '#0d9488'
+                            },
+                            {
+                                label: '云/大模型厂商',
+                                data: [4, 3, 4, 10, 5],
+                                fill: true,
+                                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                                borderColor: '#3b82f6',
+                                pointBackgroundColor: '#3b82f6',
+                                pointBorderColor: '#fff',
+                                pointHoverBackgroundColor: '#fff',
+                                pointHoverBorderColor: '#3b82f6'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: chartJsConfig.plugins,
+                        scales: chartJsConfig.scales
+                    }
+                });
+            }
+
+            function initChartsForTab(tabId) {
+                if (tabId === 'tech' && !techStackChartInstance) {
+                    initTechChart();
+                }
+                if (tabId === 'competition' && !compChartInstance) {
+                    initCompChart();
+                }
+            }
+
+            const navButtons = document.querySelectorAll('.nav-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabId = button.dataset.tab;
+
+                    navButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    tabContents.forEach(content => {
+                        if (content.id === 'tab-' + tabId) {
+                            content.classList.remove('hidden');
+                        } else {
+                            content.classList.add('hidden');
+                        }
+                    });
+                    
+                    initChartsForTab(tabId);
+                });
+            });
+            
+            const productTabButtons = document.querySelectorAll('.product-tab-btn');
+            const productTabContents = document.querySelectorAll('.product-tab-content');
+
+            productTabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabId = button.dataset.tab;
+                    
+                    productTabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    
+                    productTabContents.forEach(content => {
+                        if (content.id === 'product-' + tabId) {
+                            content.classList.add('active');
+                        } else {
+                            content.classList.remove('active');
+                        }
+                    });
+                });
+            });
+
+            const industryFilter = document.getElementById('industry-filter');
+            const useCaseItems = document.querySelectorAll('.usecase-item');
+
+            industryFilter.addEventListener('change', (e) => {
+                const selectedIndustry = e.target.value;
+                
+                useCaseItems.forEach(item => {
+                    if (selectedIndustry === 'all' || item.dataset.industry === selectedIndustry) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+
+            initChartsForTab('overview');
+        });
+    </script>
+</body>
+</html>
