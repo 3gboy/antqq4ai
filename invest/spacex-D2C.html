@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starlink 收购分析仪表盘</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- 
+    Chosen Palette: Warm Neutrals (Gray/White) with Calm Blue Accent
+    Application Structure Plan: A tabbed SPA with four main sections: Overview & Strategy, Technology & Market, Risks & Regulation, and Core Conclusion. This structure logically groups the user's analytical questions into digestible themes, allowing for focused exploration. User flow is driven by a top navigation bar that dynamically switches the main content area, providing a clean, single-page experience superior to a long scroll.
+    Visualization & Content Choices: 1. Strategy: HTML/CSS diagram (Synergy) + KPI Cards (Deal Facts) - Goal: Inform - Interaction: Tab click - Justification: Visually organizes complex relationships and key data without SVG. 2. Market: Chart.js Bar Chart (Market Share) - Goal: Compare - Interaction: Tab click, chart hover - Justification: Clearly compares hypothetical market position. 3. Risks: Chart.js Radar Chart (Culture) + HTML Table (Risk Matrix) - Goal: Organize/Compare - Interaction: Tab click, chart hover - Justification: Radar chart visually contrasts abstract concepts (culture); matrix organizes diverse risks. 4. Conclusion: JS Toggle (Defensive/Offensive) + Chart.js Doughnut (Probability) - Goal: Synthesize/Interact - Interaction: User click on toggle updates text - Justification: Interactive toggle actively engages user in the core debate; doughnut provides a clear summary.
+    CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            background-color: #f8f9fa; 
+        }
+        .nav-btn {
+            @apply px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors duration-200;
+        }
+        .nav-btn.active {
+            @apply bg-blue-600 text-white shadow-md hover:bg-blue-700;
+        }
+        .content-section {
+            @apply opacity-0 transition-opacity duration-300 ease-in-out hidden;
+        }
+        .content-section.active {
+            @apply block opacity-100;
+        }
+        .kpi-card {
+            @apply bg-white p-6 rounded-lg shadow-lg transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-[1.03];
+        }
+        .kpi-title {
+            @apply text-sm font-medium text-gray-500 uppercase;
+        }
+        .kpi-value {
+            @apply text-3xl font-bold text-blue-600 mt-2;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 320px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 384px;
+            }
+        }
+
+        .synergy-diagram {
+            @apply flex flex-col md:flex-row items-center justify-center gap-4 p-6 bg-gray-50 rounded-lg;
+        }
+        .synergy-node {
+            @apply bg-white shadow-md rounded-lg p-4 w-40 text-center font-semibold text-gray-800 border-2 border-blue-200 transition-transform duration-200 hover:scale-110;
+        }
+        .synergy-core {
+            @apply bg-blue-600 text-white shadow-xl rounded-full p-6 w-48 text-center font-bold text-lg transition-transform duration-200 hover:scale-110;
+        }
+        .synergy-arrow {
+            @apply text-2xl text-blue-400;
+        }
+
+        .risk-table {
+            @apply min-w-full bg-white divide-y divide-gray-200 shadow-md rounded-lg overflow-hidden;
+        }
+        .risk-table tbody tr:hover {
+            @apply bg-gray-100;
+        }
+        .risk-table th {
+            @apply px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50;
+        }
+        .risk-table td {
+            @apply px-6 py-4 whitespace-nowrap text-sm text-gray-700;
+        }
+        .risk-high {
+            @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800;
+        }
+        .risk-medium {
+            @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800;
+        }
+        .risk-low {
+            @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800;
+        }
+        .toggle-btn {
+            @apply px-6 py-3 rounded-lg text-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95;
+        }
+        .toggle-btn.active {
+            @apply bg-blue-600 text-white shadow-lg;
+        }
+        .toggle-btn.inactive {
+            @apply bg-gray-200 text-gray-700 hover:bg-gray-300;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-2xl font-bold text-blue-700">Starlink 收购分析仪表盘</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4" id="main-nav">
+                        <button class="nav-btn active" data-target="page-strategy">概览与战略</button>
+                        <button class="nav-btn" data-target="page-tech-market">技术与市场</button>
+                        <button class="nav-btn" data-target="page-risks">风险与监管</button>
+                        <button class="nav-btn" data-target="page-conclusion">核心结论</button>
+                    </div>
+                </div>
+                <div class="md:hidden">
+                    <select id="mobile-nav" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="page-strategy">概览与战略</option>
+                        <option value="page-tech-market">技术与市场</option>
+                        <option value="page-risks">风险与监管</option>
+                        <option value="page-conclusion">核心结论</option>
+                    </select>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+
+        <section id="page-strategy" class="content-section active">
+            <p class="text-lg text-gray-700 mb-6 leading-relaxed">
+                本部分探讨此项（假设的）收购交易的核心背景与战略价值。我们将分析交易的关键细节，并深入评估此举对 Starlink 现有业务，特别是“手机直连卫星（Direct-to-Cell）”服务的深远意义，以及与其他马斯克旗下业务的潜在协同效应。
+            </p>
+            
+            <h2 class="text-3xl font-bold text-gray-900 mb-6 border-l-4 border-blue-600 pl-4">1. 交易背景 (What & Why)</h2>
+            
+            <h3 class="text-2xl font-semibold text-gray-800 mb-4">交易细节探究</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="kpi-card">
+                    <div class="kpi-title">收购对象</div>
+                    <div class="kpi-value">"T-Mobile US" (假设)</div>
+                    <div class="text-sm text-gray-600 mt-2">或某区域性运营商以规避大型反垄断审查。</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">关键资产</div>
+                    <div class="kpi-value">50MHz 频谱</div>
+                    <div class="text-sm text-gray-600 mt-2">假设为 1.9GHz (PCS G Block) 中频段，对手机直连至关重要。</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">收购价格</div>
+                    <div class="kpi-value">~$XX B</div>
+                    <div class="text-sm text-gray-600 mt-2">需对比市场估值。若为 T-Mobile 频谱合作，则形式不同。</div>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-semibold text-gray-800 mb-4">战略价值评估</h3>
+            <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
+                <h4 class="text-xl font-bold text-blue-700 mb-3">核心意义：赋能 "手机直连卫星"</h4>
+                <p class="text-gray-700">
+                    这 50MHz 频谱是实现大规模“手机直连”服务的关键。它允许 Starlink 的第二代卫星直接与地面上未经修改的标准 4G/5G 手机通信，无需笨重的卫星电话。这块中频段频谱（如1.9GHz）提供了覆盖范围和容量的完美平衡，是填补全球移动网络覆盖盲区的核心技术拼图。
+                </p>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h4 class="text-xl font-bold text-blue-700 mb-4">潜在协同效应</h4>
+                <p class="text-gray-700 mb-6">收购传统运营商不仅带来频谱，还可能带来宝贵的地面资产和牌照。更重要的是，它将 Starlink 编织进马斯克的“万物互联”生态系统，创造巨大的网络效应。</p>
+                <div class="synergy-diagram">
+                    <div class="flex flex-col items-center gap-4">
+                        <div class="synergy-node">特斯拉 (车联网)</div>
+                        <div class="synergy-arrow">↕</div>
+                        <div class="synergy-node">SolarCity (家庭能源)</div>
+                    </div>
+                    <div class="synergy-arrow hidden md:block text-4xl mx-4">↔</div>
+                    <div class="synergy-core">Starlink + 收购的<br>地面网络/频谱</div>
+                    <div class="synergy-arrow hidden md:block text-4xl mx-4">↔</div>
+                    <div class="synergy-node">X (社交与支付)</div>
+                </div>
+                <p class="text-center text-sm text-gray-600 mt-4">一个统一的、覆盖全球的连接层，为特斯拉的自动驾驶数据回传、家庭能源管理和未来的 X 平台服务提供无缝网络支持。</p>
+            </div>
+        </section>
+
+        <section id="page-tech-market" class="content-section">
+            <p class="text-lg text-gray-700 mb-6 leading-relaxed">
+                本部分深入分析 Starlink 卫星网络与地面电信网络融合所面临的技术挑战与机遇。我们将探讨这种融合如何提升网络性能，以及它将如何重塑市场竞争格局，特别是对传统电信巨头构成的威胁和对全球数字鸿沟问题的潜在影响。
+            </p>
+
+            <h2 class="text-3xl font-bold text-gray-900 mb-6 border-l-4 border-blue-600 pl-4">2. 技术与市场影响 (How & Impact)</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">技术整合：星地融合</h3>
+                    <p class="text-gray-700 mb-4">最大的技术难点在于实现 LEO 卫星网络与地面 5G/LTE 核心网的无缝切换与负载均衡。这需要解决多普勒频移、高延迟抖动和复杂的切换逻辑。</p>
+                    <div class="w-full bg-gray-50 p-4 rounded-lg">
+                        <div class="flex flex-col items-center text-center">
+                            <div class="font-bold text-lg text-blue-600">LEO 卫星星座</div>
+                            <div class="text-2xl text-gray-400">↓</div>
+                            <div class="font-medium text-gray-700">50MHz 共享/专用频谱</div>
+                            <div class="text-2xl text-gray-400">↓</div>
+                            <div class="font-bold text-lg text-blue-600">地面核心网 & 基站</div>
+                            <div class="text-2xl text-gray-400">↓</div>
+                            <div class="font-medium text-gray-700">标准智能手机 (无缝切换)</div>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 mt-4">一旦成功，Starlink 将能极大提升网络总容量，在城市密集区使用地面网络，在偏远地区自动切换到卫星网络，提供“永不掉线”的体验。</p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">竞争格局重塑</h3>
+                    <p class="text-gray-700 mb-4">此举将对传统电信三巨头 (如 Verizon, AT&T) 构成直接威胁。Starlink 不再是利基市场的补充者，而是有能力在全国范围内争夺主流客户的全业务运营商。</p>
+                    <div class="chart-container">
+                        <canvas id="chartMarketShare"></canvas>
+                    </div>
+                    <p class="text-center text-sm text-gray-600 mt-2">图表：假设的收购后偏远地区市场份额变化</p>
+                    <div class="text-center mt-4">
+                        <button id="btn-simulate-growth" class="px-4 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-all active:scale-95">
+                            📈 模拟5年后增长
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">消除数字鸿沟</h3>
+                    <p class="text-gray-700">
+                        这是最具社会价值的影响。全球仍有数十亿人无法接入可靠的移动宽带。Starlink 的手机直连服务可以以极低的边际成本覆盖这些地区（海洋、山脉、沙漠），对发展中国家的经济和教育产生革命性推动。
+                    </p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">推动 6G 与 NTN</h3>
+                    <p class="text-gray-700">
+                        Starlink 的实践正在加速 6G 时代“非地面网络 (NTN)”标准的发展。星地融合是 6G 愿景的核心组成部分，而 Starlink 正在将这一未来技术提前商业化。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- START OF FIXED/RE-ADDED CONTENT -->
+        <section id="page-risks" class="content-section">
+            <p class="text-lg text-gray-700 mb-6 leading-relaxed">
+                任何颠覆性举措都伴随着巨大的风险。本部分将集中分析此次收购在监管政策、财务状况和企业运营三方面可能遇到的重大挑战。这包括反垄断审查、巨额资本支出压力以及两种截然不同的企业文化融合的难度。
+            </p>
+            
+            <h2 class="text-3xl font-bold text-gray-900 mb-6 border-l-4 border-blue-600 pl-4">3. 监管、财务与风险 (Constraints & Risks)</h2>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">综合风险矩阵</h3>
+                    <p class="text-gray-700 mb-4">我们评估了三大类风险的发生概率和潜在影响。</p>
+                    <div class="overflow-x-auto">
+                        <table class="risk-table">
+                            <thead>
+                                <tr>
+                                    <th>风险类别</th>
+                                    <th>关键描述</th>
+                                    <th>概率</th>
+                                    <th>影响</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>监管与政策</td>
+                                    <td>FCC 附加条件, 反垄断审查</td>
+                                    <td><span class="risk-high">高</span></td>
+                                    <td><span class="risk-high">高</span></td>
+                                </tr>
+                                <tr>
+                                    <td>财务与资金</td>
+                                    <td>巨额部署成本 + 收购支出</td>
+                                    <td><span class="risk-medium">中</span></td>
+                                    <td><span class="risk-high">高</span></td>
+                                </tr>
+                                <tr>
+                                    <td>运营与整合</td>
+                                    <td>企业文化冲突, 客户流失</td>
+                                    <td><span class="risk-medium">中</span></td>
+                                    <td><span class="risk-medium">中</span></td>
+                                </tr>
+                                <tr>
+                                    <td>数据安全</td>
+                                    <td>关键市场（如欧洲、印度）的监管限制</td>
+                                    <td><span class="risk-high">高</span></td>
+                                    <td><span class="risk-medium">中</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">文化整合难度</h3>
+                    <p class="text-gray-700 mb-4">"硅谷太空公司" (SpaceX) 的敏捷、冒险文化与 "传统电信运营商" 的稳定、监管驱动文化存在巨大差异。整合不善可能导致人才流失和服务质量下降。</p>
+                    <div class="chart-container">
+                        <canvas id="chartCultureClash"></canvas>
+                    </div>
+                    <p class="text-center text-sm text-gray-600 mt-2">图表：假设的两种企业文化特征对比</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-conclusion" class="content-section">
+            <p class="text-lg text-gray-700 mb-6 leading-relaxed">
+                最后，我们对此次交易的性质和 Starlink 的未来进行总结。这是一个防御性的补强，还是对全球电信业发起的颠覆性进攻？更重要的是，Starlink 能否凭借此举，真正从一个“补充者”转型为与 AT&T、Verizon 并驾齐驱的“主流电信巨头”？
+            </p>
+
+            <h2 class="text-3xl font-bold text-gray-900 mb-6 border-l-4 border-blue-600 pl-4">🔥 核心结论聚焦</h2>
+            
+            <div class="bg-white p-8 rounded-lg shadow-lg text-center">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6">防御性布局 还是 颠覆性进攻？</h3>
+                
+                <div class="flex justify-center space-x-4 mb-6">
+                    <button id="btn-defensive" class="toggle-btn inactive" data-text="defensive">
+                        🛡️ 防御性布局
+                    </button>
+                    <button id="btn-offensive" class="toggle-btn active" data-text="offensive">
+                        🚀 颠覆性进攻
+                    </button>
+                </div>
+                
+                <div id="conclusion-text-container" class="max-w-3xl mx-auto min-h-[120px]">
+                    <p id="conclusion-text" class="text-lg text-gray-700 leading-relaxed"></p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 items-center">
+                <div class="bg-white p-8 rounded-lg shadow-lg">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">转型为主流巨头？</h3>
+                    <p class="text-gray-700 mb-4">
+                        我们的分析倾向于，这是 Starlink 成为“主流巨头”的必要一步。仅靠卫星无法在人口密集的城市地区与地面网络竞争。
+                        <br><br>
+                        “卫星 + 地面频谱 + 地面网络”的三位一体组合，是唯一能同时在“覆盖广度”（卫星）和“容量深度”（地面）上超越所有现有运营商的路径。挑战在于执行。
+                    </p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4 text-center">转型成功概率评估</h3>
+                    <div class="chart-container" style="height: 300px; max-height: 300px;">
+                        <canvas id="chartTransformation"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- END OF FIXED/RE-ADDED CONTENT -->
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navButtons = document.querySelectorAll('#main-nav .nav-btn');
+            const mobileNav = document.getElementById('mobile-nav');
+            const contentSections = document.querySelectorAll('.content-section');
+            
+            let activePage = 'page-strategy';
+            let charts = {};
+
+            let originalMarketData = [35, 30, 25, 45];
+            let simulatedMarketData = [35 * 0.9, 30 * 0.9, 25 * 0.8, 45 * 1.5].map(d => Math.min(d, 100));
+            let isMarketSimulated = false;
+
+            const conclusionTexts = {
+                offensive: '这是一次彻底的颠覆性进攻。Starlink 的目标不是补充现有网络，而是利用其独特的全球卫星覆盖能力，结合新获得的地面频谱，彻底改写电信规则。他们将创造一个统一的全球网络，使传统运营商局限于区域市场。',
+                defensive: '这更像是一个防御性布局。Starlink 认识到仅靠卫星无法满足城市高密度用户的容量需求。收购频谱和地面资产是为了弥补其在城市地区的短板，确保其“手机直连”服务能与传统运营商竞争，而不是被边缘化。'
+            };
+
+            function showPage(pageId) {
+                contentSections.forEach(section => {
+                    section.classList.remove('active', 'opacity-100');
+                    section.classList.add('hidden');
+                });
+                
+                const targetSection = document.getElementById(pageId);
+                
+                // ADDED NULL CHECK TO PREVENT ERROR IF SECTION IS MISSING
+                if (!targetSection) {
+                    console.error(`Error: Content section with id "${pageId}" not found.`);
+                    return; 
+                }
+
+                targetSection.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    targetSection.classList.add('active', 'opacity-100');
+                }, 10); 
+
+                navButtons.forEach(btn => {
+                    if (btn.dataset.target === pageId) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+                
+                mobileNav.value = pageId;
+                activePage = pageId;
+
+                switch (pageId) {
+                    case 'page-tech-market':
+                        initTechMarketPage();
+                        break;
+                    case 'page-risks':
+                        initRisksPage();
+                        break;
+                    case 'page-conclusion':
+                        initConclusionPage();
+                        break;
+                }
+            }
+
+            function setupNavigation() {
+                navButtons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        showPage(btn.dataset.target);
+                    });
+                });
+                
+                mobileNav.addEventListener('change', (e) => {
+                    showPage(e.target.value);
+                });
+            }
+
+            function initTechMarketPage() {
+                if (charts.marketShare) {
+                    charts.marketShare.destroy();
+                }
+                const ctx = document.getElementById('chartMarketShare').getContext('2d');
+                isMarketSimulated = false; 
+                charts.marketShare = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Verizon', 'AT&T', 'T-Mobile', 'Starlink (收购后)'],
+                        datasets: [{
+                            label: '假设的偏远地区市场份额 (%)',
+                            data: [...originalMarketData], 
+                            backgroundColor: [
+                                'rgba(239, 68, 68, 0.6)',
+                                'rgba(59, 130, 246, 0.6)',
+                                'rgba(234, 179, 8, 0.6)',
+                                'rgba(22, 163, 74, 0.6)'
+                            ],
+                            borderColor: [
+                                'rgba(239, 68, 68, 1)',
+                                'rgba(59, 130, 246, 1)',
+                                'rgba(234, 179, 8, 1)',
+                                'rgba(22, 163, 74, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            title: {
+                                display: true,
+                                text: '偏远地区市场份额对比 (假设)'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 50,
+                                title: {
+                                    display: true,
+                                    text: '市场份额 (%)'
+                                }
+                            }
+                        }
+                    }
+                });
+
+                const simulateBtn = document.getElementById('btn-simulate-growth');
+                simulateBtn.textContent = '📈 模拟5年后增长'; 
+
+                const simulateBtnListener = () => {
+                    if (!isMarketSimulated) {
+                        charts.marketShare.data.datasets[0].data = [...simulatedMarketData];
+                        charts.marketShare.options.plugins.title.text = '偏远地区市场份额对比 (5年后模拟)';
+                        simulateBtn.textContent = '🔄 重置为初始数据';
+                        isMarketSimulated = true;
+                    } else {
+                        charts.marketShare.data.datasets[0].data = [...originalMarketData];
+                        charts.marketShare.options.plugins.title.text = '偏远地区市场份额对比 (假设)';
+                        simulateBtn.textContent = '📈 模拟5年后增长';
+                        isMarketSimulated = false;
+                    }
+                    charts.marketShare.update();
+                };
+                
+                if (!simulateBtn.listenerAdded) {
+                    simulateBtn.addEventListener('click', simulateBtnListener);
+                    simulateBtn.listenerAdded = true; 
+                }
+            }
+
+            function initRisksPage() {
+                if (charts.cultureClash) return;
+                const ctx = document.getElementById('chartCultureClash').getContext('2d');
+                charts.cultureClash = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['敏捷性', '创新驱动', '风险偏好', '层级结构', '稳定性', '监管合规'],
+                        datasets: [{
+                            label: 'SpaceX 文化',
+                            data: [9, 8, 9, 3, 4, 5],
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 2
+                        }, {
+                            label: '传统电信文化',
+                            data: [3, 4, 2, 8, 9, 9],
+                            backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                            borderColor: 'rgba(239, 68, 68, 1)',
+                            pointBackgroundColor: 'rgba(239, 68, 68, 1)',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: '企业文化特征对比 (假设)'
+                            },
+                            legend: {
+                                position: 'bottom'
+                            }
+                        },
+                        scales: {
+                            r: {
+                                beginAtZero: true,
+                                max: 10
+                            }
+                        }
+                    }
+                });
+            }
+
+            function initConclusionPage() {
+                const btnDefensive = document.getElementById('btn-defensive');
+                const btnOffensive = document.getElementById('btn-offensive');
+                const conclusionTextEl = document.getElementById('conclusion-text');
+
+                function updateConclusionText(mode) {
+                    conclusionTextEl.style.opacity = 0;
+                    setTimeout(() => {
+                        conclusionTextEl.textContent = conclusionTexts[mode];
+                        conclusionTextEl.style.opacity = 1;
+                    }, 200);
+
+                    if (mode === 'defensive') {
+                        btnDefensive.classList.add('active');
+                        btnDefensive.classList.remove('inactive');
+                        btnOffensive.classList.add('inactive');
+                        btnOffensive.classList.remove('active');
+                    } else {
+                        btnOffensive.classList.add('active');
+                        btnOffensive.classList.remove('inactive');
+                        btnDefensive.classList.add('inactive');
+                        btnDefensive.classList.remove('active');
+                    }
+                }
+
+                btnDefensive.addEventListener('click', () => updateConclusionText('defensive'));
+                btnOffensive.addEventListener('click', () => updateConclusionText('offensive'));
+                
+                updateConclusionText('offensive');
+
+                if (charts.transformation) return;
+                const ctx = document.getElementById('chartTransformation').getContext('2d');
+                charts.transformation = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['转型为主流巨头', '保持为利基补充者'],
+                        datasets: [{
+                            label: '转型概率',
+                            data: [65, 35],
+                            backgroundColor: [
+                                'rgba(22, 163, 74, 0.7)',
+                                'rgba(234, 179, 8, 0.7)'
+                            ],
+                            borderColor: [
+                                'rgba(22, 163, 74, 1)',
+                                'rgba(234, 179, 8, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.label}: ${context.raw}%`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            setupNavigation();
+            showPage('page-strategy');
+        });
+    </script>
+
+</body>
+</html>
+
+
