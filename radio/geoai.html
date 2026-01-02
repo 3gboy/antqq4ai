@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoAI 与空间智能演进深度洞察</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Google Fonts (Noto Sans SC) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Custom Styles -->
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #f3f4f6; /* warm gray-100 */
+            color: #1f2937; /* gray-800 */
+        }
+        
+        .nav-item.active {
+            background-color: #e5e7eb; /* gray-200 */
+            border-left: 4px solid #0f766e; /* teal-700 */
+            font-weight: 600;
+        }
+
+        /* Timeline Styles */
+        .timeline-line {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #d1d5db; /* gray-300 */
+            z-index: 0;
+        }
+        
+        .timeline-node {
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+        
+        .timeline-node:hover {
+            transform: scale(1.1);
+        }
+
+        .timeline-content {
+            transition: all 0.3s ease;
+            opacity: 0.7;
+        }
+
+        .timeline-node.active + .timeline-content,
+        .timeline-content:hover {
+            opacity: 1;
+        }
+
+        /* Chart Container strict sizing */
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        /* Card Hover Effects */
+        .interactive-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .interactive-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-color: #0d9488; /* teal-600 */
+        }
+    </style>
+</head>
+<body class="h-screen overflow-hidden flex flex-col md:flex-row">
+
+    <!-- Chosen Palette: Warm Neutral & Teal Tech
+         Background: Warm Gray (#f3f4f6)
+         Primary Text: Deep Charcoal (#1f2937)
+         Accent: Teal (#0f766e) for intelligence/geo connotations
+         Secondary: Slate Blue (#475569) for tech stability
+    -->
+
+    <!-- Application Structure Plan: 
+         - Layout: Dashboard style with a persistent sidebar navigation and a main dynamic content area.
+         - Logic: The user is guided through the "Story" of GeoAI:
+           1. Landscape (Current Tools): Comparing ArcGIS, QGIS, Cesium.
+           2. Evolution (History): A vertical timeline of tech progression.
+           3. Analysis (Opportunities/Challenges): Data viz of market forces.
+           4. Strategy (SME Action): Actionable steps for small businesses.
+         - Justification: This non-linear exploration allows different personas (devs vs. managers) to jump to relevant data while maintaining a cohesive narrative.
+    -->
+
+    <!-- Visualization & Content Choices:
+         - Software Comparison: Radar Chart (Chart.js) to compare multidimensional attributes (Learning Curve, Cost, AI Capability).
+         - Evolution: Interactive Vertical Timeline (HTML/CSS) to show progression text clearly.
+         - Market Analysis: Bar & Doughnut Charts (Chart.js) for quantitative breakdown of challenges vs opportunities.
+         - Strategy: Accordion/Cards (HTML/JS) for progressive disclosure of advice.
+    -->
+
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <!-- Sidebar Navigation -->
+    <nav class="w-full md:w-64 bg-white border-r border-gray-200 flex flex-col shadow-sm z-20">
+        <div class="p-6 border-b border-gray-100">
+            <h1 class="text-2xl font-bold text-teal-800 tracking-tight">GeoAI 洞察</h1>
+            <p class="text-xs text-gray-500 mt-1">空间智能演进与策略报告</p>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto py-4 space-y-1">
+            <button onclick="switchTab('landscape')" id="nav-landscape" class="nav-item active w-full text-left px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center">
+                <span>📍 软件生态现状</span>
+            </button>
+            <button onclick="switchTab('evolution')" id="nav-evolution" class="nav-item w-full text-left px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center">
+                <span>📈 演进路径分析</span>
+            </button>
+            <button onclick="switchTab('market')" id="nav-market" class="nav-item w-full text-left px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center">
+                <span>⚖️ 挑战与机会</span>
+            </button>
+            <button onclick="switchTab('strategy')" id="nav-strategy" class="nav-item w-full text-left px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center">
+                <span>🚀 中小企业破局</span>
+            </button>
+        </div>
+
+        <div class="p-4 border-t border-gray-100 bg-gray-50">
+            <div class="text-xs text-gray-400">
+                数据来源: 行业综合分析报告<br>
+                Interactive Report v1.0
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto relative bg-gray-50/50">
+        
+        <!-- SECTION 1: LANDSCAPE (Software Support) -->
+        <section id="view-landscape" class="p-6 md:p-10 max-w-7xl mx-auto opacity-100 transition-opacity duration-300">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-3">主流GIS软件对GeoAI的支持现状</h2>
+                <p class="text-gray-600 max-w-3xl leading-relaxed">
+                    当前地理信息领域正经历从传统“数字化”向“智能化”的转型。主流平台如ArcGIS、QGIS和Cesium在AI集成方面采取了不同的技术路线。本部分分析它们在深度学习集成、自动化处理和可视化智能方面的差异。
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <!-- Comparison Cards -->
+                <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- ArcGIS Card -->
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 interactive-card" onclick="updateSoftwareDetail('arcgis')">
+                        <div class="h-2 w-12 bg-blue-600 rounded-full mb-3"></div>
+                        <h3 class="font-bold text-lg mb-2">ArcGIS (Esri)</h3>
+                        <p class="text-sm text-gray-500 mb-3">全栈式商业化集成</p>
+                        <ul class="text-xs text-gray-600 space-y-2">
+                            <li class="flex items-start">
+                                <span class="mr-2 text-green-500">●</span> 内置 GeoAI Toolbox
+                            </li>
+                            <li class="flex items-start">
+                                <span class="mr-2 text-green-500">●</span> 无缝衔接 PyTorch/TF
+                            </li>
+                            <li class="flex items-start">
+                                <span class="mr-2 text-green-500">●</span> 预训练模型丰富
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- QGIS Card -->
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 interactive-card" onclick="updateSoftwareDetail('qgis')">
+                        <div class="h-2 w-12 bg-green-500 rounded-full mb-3"></div>
+                        <h3 class="font-bold text-lg mb-2">QGIS</h3>
+                        <p class="text-sm text-gray-500 mb-3">开源插件生态驱动</p>
+                        <ul class="text-xs text-gray-600 space-y-2">
+                            <li class="flex items-start">
+                                <span class="mr-2 text-green-500">●</span> 灵活的 Python 插件
+                            </li>
+                            <li class="flex items-start">
+                                <span class="mr-2 text-green-500">●</span> Orfeo ToolBox 集成
+                            </li>
+                            <li class="flex items-start">
+                                <span class="mr-2 text-green-500">●</span> 社区迭代速度快
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Cesium Card -->
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 interactive-card" onclick="updateSoftwareDetail('cesium')">
+                        <div class="h-2 w-12 bg-orange-500 rounded-full mb-3"></div>
+                        <h3 class="font-bold text-lg mb-2">Cesium</h3>
+                        <p class="text-sm text-gray-500 mb-3">3D与云端实时计算</p>
+                        <ul class="text-xs text-gray-600 space-y-2">
+                            <li class="flex items-start">
+                                <span class="mr-2 text-green-500">●</span> 3D Tiles 智能流式加载
+                            </li>
+                            <li class="flex items-start">
+                                <span class="mr-2 text-green-500">●</span> WebGL 高性能渲染
+                            </li>
+                            <li class="flex items-start">
+                                <span class="mr-2 text-green-500">●</span> 适合数字孪生场景
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Detail Text Area -->
+                    <div class="md:col-span-3 bg-teal-50 p-6 rounded-lg border border-teal-100 mt-2">
+                        <h4 id="software-title" class="font-bold text-teal-900 mb-2">点击上方卡片查看详细分析</h4>
+                        <p id="software-desc" class="text-sm text-teal-800">
+                            请选择一个软件平台以了解其在 GeoAI 领域的具体优势与局限性。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Radar Chart -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col">
+                    <h3 class="font-semibold text-gray-700 mb-4 text-center">能力维度对比</h3>
+                    <div class="flex-1 w-full flex items-center justify-center">
+                        <div class="chart-container relative h-64 w-full max-w-[350px]">
+                            <canvas id="softwareRadarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: EVOLUTION (Timeline) -->
+        <section id="view-evolution" class="hidden p-6 md:p-10 max-w-5xl mx-auto">
+            <div class="mb-10 text-center">
+                <h2 class="text-3xl font-bold text-gray-800 mb-3">GeoAI 与空间智能演进路径</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">
+                    从早期的几何计算到如今的感知与决策智能，空间智能的发展经历了三个主要阶段。点击时间轴节点查看各阶段特征。
+                </p>
+            </div>
+
+            <div class="relative py-10 px-4">
+                <!-- Center Line -->
+                <div class="timeline-line hidden md:block"></div>
+                
+                <!-- Stage 1 -->
+                <div class="relative md:grid md:grid-cols-2 gap-8 mb-12 items-center cursor-pointer group" onclick="highlightTimeline(1)">
+                    <div class="md:text-right mb-4 md:mb-0 pr-8">
+                        <h3 class="text-xl font-bold text-gray-800">1. 计算几何与数字化阶段</h3>
+                        <span class="inline-block px-3 py-1 bg-gray-200 text-gray-600 rounded-full text-xs mt-2 font-mono">1990s - 2010</span>
+                    </div>
+                    <div class="absolute left-0 md:left-1/2 w-6 h-6 bg-gray-300 rounded-full border-4 border-white shadow transform md:-translate-x-1/2 mt-1 md:mt-0 timeline-node" id="node-1"></div>
+                    <div class="pl-8 md:pl-8 timeline-content">
+                        <div class="bg-white p-5 rounded-lg shadow-sm border-l-4 border-gray-400">
+                            <p class="text-sm text-gray-600">
+                                <strong>核心特征：</strong> 将物理世界数字化。GIS 主要处理矢量、栅格数据的存储、查询和基础几何分析（缓冲区、叠加）。
+                                <br><br>
+                                <strong>关键技术：</strong> 拓扑关系、空间数据库、基础统计学。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stage 2 -->
+                <div class="relative md:grid md:grid-cols-2 gap-8 mb-12 items-center cursor-pointer group" onclick="highlightTimeline(2)">
+                    <div class="order-2 pl-8">
+                        <h3 class="text-xl font-bold text-teal-800">2. 感知智能与自动化阶段</h3>
+                        <span class="inline-block px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs mt-2 font-mono">2010 - 2022</span>
+                    </div>
+                    <div class="absolute left-0 md:left-1/2 w-6 h-6 bg-teal-500 rounded-full border-4 border-white shadow transform md:-translate-x-1/2 mt-1 md:mt-0 timeline-node" id="node-2"></div>
+                    <div class="order-1 md:text-right pr-8 timeline-content">
+                        <div class="bg-white p-5 rounded-lg shadow-md border-l-4 border-teal-500">
+                            <p class="text-sm text-gray-600">
+                                <strong>核心特征：</strong> AI 开始“看懂”地图。利用 CNN/RNN 等深度学习模型自动从遥感影像中提取建筑物、道路，进行变化检测。
+                                <br><br>
+                                <strong>关键技术：</strong> 计算机视觉 (CV)、语义分割、目标检测。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stage 3 -->
+                <div class="relative md:grid md:grid-cols-2 gap-8 mb-12 items-center cursor-pointer group" onclick="highlightTimeline(3)">
+                    <div class="md:text-right mb-4 md:mb-0 pr-8">
+                        <h3 class="text-xl font-bold text-blue-700">3. 认知与决策智能阶段</h3>
+                        <span class="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs mt-2 font-mono">2023 - 未来</span>
+                    </div>
+                    <div class="absolute left-0 md:left-1/2 w-6 h-6 bg-blue-600 rounded-full border-4 border-white shadow transform md:-translate-x-1/2 mt-1 md:mt-0 timeline-node" id="node-3"></div>
+                    <div class="pl-8 md:pl-8 timeline-content">
+                        <div class="bg-white p-5 rounded-lg shadow-sm border-l-4 border-blue-600">
+                            <p class="text-sm text-gray-600">
+                                <strong>核心特征：</strong> 从“提取”走向“理解”与“生成”。结合大语言模型 (LLM) 和空间大模型，实现自然语言交互式 GIS、复杂空间推理和预测性决策。
+                                <br><br>
+                                <strong>关键技术：</strong> SAM (Segment Anything)、Multimodal LLMs、空间知识图谱。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: MARKET (Challenges & Opportunities) -->
+        <section id="view-market" class="hidden p-6 md:p-10 max-w-7xl mx-auto">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-3">挑战与机会分析</h2>
+                <p class="text-gray-600 max-w-3xl">
+                    GeoAI 市场正处于爆发前夜，但仍面临数据孤岛、算力成本和人才短缺的制约。通过下方图表探索当前的市场动态。
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Opportunities Column -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <h3 class="text-xl font-bold text-gray-700 mb-4 flex items-center">
+                        <span class="bg-blue-100 text-blue-600 p-2 rounded-lg mr-3">🚀</span> 
+                        核心应用机会
+                    </h3>
+                    <div class="mb-6">
+                        <div class="chart-container relative h-64 w-full">
+                            <canvas id="opportunitiesChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-gray-50 rounded text-sm text-gray-600 hover:bg-blue-50 transition-colors">
+                            <strong>智慧城市/数字孪生：</strong> 城市体检、交通流预测、应急响应模拟。
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded text-sm text-gray-600 hover:bg-blue-50 transition-colors">
+                            <strong>自然资源监管：</strong> 耕地保护、森林防火、水体污染自动监测。
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded text-sm text-gray-600 hover:bg-blue-50 transition-colors">
+                            <strong>商业选址与物流：</strong> 基于空间大数据的精准客群分析与路径优化。
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Challenges Column -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <h3 class="text-xl font-bold text-gray-700 mb-4 flex items-center">
+                        <span class="bg-red-100 text-red-600 p-2 rounded-lg mr-3">⚠️</span> 
+                        面临的主要挑战
+                    </h3>
+                    <div class="mb-6 flex justify-center">
+                        <div class="chart-container relative h-64 w-full max-w-[300px]">
+                            <canvas id="challengesChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="mt-4" id="challenge-detail-text">
+                        <p class="text-sm text-gray-500 italic text-center">点击上方圆环查看挑战详情。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: STRATEGY (SME Guide) -->
+        <section id="view-strategy" class="hidden p-6 md:p-10 max-w-4xl mx-auto">
+            <div class="bg-teal-900 text-white rounded-2xl p-8 mb-10 text-center shadow-lg">
+                <h2 class="text-3xl font-bold mb-4">中小企业如何破局？</h2>
+                <p class="text-teal-100 text-lg">
+                    在巨头林立的 GIS 市场，中小企业应避免“全栈式”竞争，转向“专精特新”的敏捷策略。
+                </p>
+            </div>
+
+            <div class="space-y-4">
+                <!-- Strategy Step 1 -->
+                <div class="bg-white border border-gray-200 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-md">
+                    <button class="w-full text-left px-6 py-4 flex justify-between items-center bg-gray-50 hover:bg-white focus:outline-none" onclick="toggleStrategy(1)">
+                        <div class="flex items-center">
+                            <span class="flex items-center justify-center w-8 h-8 rounded-full bg-teal-100 text-teal-700 font-bold mr-4">1</span>
+                            <span class="font-bold text-gray-800">切入垂直细分场景 (Niche Focus)</span>
+                        </div>
+                        <span id="icon-1" class="text-gray-400 transform transition-transform">▼</span>
+                    </button>
+                    <div id="strategy-content-1" class="hidden px-6 py-4 border-t border-gray-100 bg-white">
+                        <p class="text-gray-600 text-sm leading-relaxed mb-3">
+                            不要试图做一个通用的 AI-GIS 平台。选择一个具体的痛点，例如：
+                        </p>
+                        <ul class="list-disc list-inside text-sm text-gray-600 space-y-1 ml-4">
+                            <li><strong>电力巡检：</strong> 专门针对输电线植被入侵的无人机影像识别。</li>
+                            <li><strong>农业保险：</strong> 针对特定农作物（如葡萄园）的灾损评估。</li>
+                            <li><strong>管网维护：</strong> 城市地下管网的渗漏预测。</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Strategy Step 2 -->
+                <div class="bg-white border border-gray-200 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-md">
+                    <button class="w-full text-left px-6 py-4 flex justify-between items-center bg-gray-50 hover:bg-white focus:outline-none" onclick="toggleStrategy(2)">
+                        <div class="flex items-center">
+                            <span class="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold mr-4">2</span>
+                            <span class="font-bold text-gray-800">拥抱开源与预训练模型</span>
+                        </div>
+                        <span id="icon-2" class="text-gray-400 transform transition-transform">▼</span>
+                    </button>
+                    <div id="strategy-content-2" class="hidden px-6 py-4 border-t border-gray-100 bg-white">
+                        <p class="text-gray-600 text-sm leading-relaxed mb-3">
+                            中小企业缺乏从零训练大模型的算力。策略应是：
+                        </p>
+                        <ul class="list-disc list-inside text-sm text-gray-600 space-y-1 ml-4">
+                            <li><strong>微调 (Fine-tuning)：</strong> 基于 SAM (Segment Anything Model) 或 YOLO 等开源模型，用少量行业私有数据进行微调。</li>
+                            <li><strong>插件化开发：</strong> 开发 QGIS 插件或 ArcGIS Toolbox 工具，借力现有大平台的流量。</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Strategy Step 3 -->
+                <div class="bg-white border border-gray-200 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-md">
+                    <button class="w-full text-left px-6 py-4 flex justify-between items-center bg-gray-50 hover:bg-white focus:outline-none" onclick="toggleStrategy(3)">
+                        <div class="flex items-center">
+                            <span class="flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 text-purple-700 font-bold mr-4">3</span>
+                            <span class="font-bold text-gray-800">构建“数据+服务”闭环</span>
+                        </div>
+                        <span id="icon-3" class="text-gray-400 transform transition-transform">▼</span>
+                    </button>
+                    <div id="strategy-content-3" class="hidden px-6 py-4 border-t border-gray-100 bg-white">
+                        <p class="text-gray-600 text-sm leading-relaxed mb-3">
+                            单纯卖软件很难，应转向 DaaS (Data as a Service) 或 Insights as a Service。
+                        </p>
+                        <ul class="list-disc list-inside text-sm text-gray-600 space-y-1 ml-4">
+                            <li><strong>数据沉淀：</strong> 在服务过程中积累高质量标注数据，这是未来的核心壁垒。</li>
+                            <li><strong>结果导向：</strong> 直接交付分析报告或决策建议，而不是交付复杂的软件界面。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // --- State Management ---
+        const state = {
+            currentTab: 'landscape',
+            softwareData: {
+                arcgis: {
+                    title: "ArcGIS: 企业级 GeoAI 霸主",
+                    desc: "Esri 通过 ArcGIS Pro 和 Enterprise 提供了深度的深度学习集成。内置了针对对象检测、像素分类的预训练模型。优势在于工作流极其成熟，适合大型政府和企业项目，但许可费用高昂，系统封闭。"
+                },
+                qgis: {
+                    title: "QGIS: 灵活的开源实验室",
+                    desc: "QGIS 通过插件生态（如 SCP, EnMap-Box）支持 AI。虽然没有官方统一的 AI 内核，但能够快速集成学术界的最新算法（如 PyTorch 脚本）。适合科研、中小企业原型开发，拥有极高的定制自由度。"
+                },
+                cesium: {
+                    title: "Cesium: 3D 实景与云端智能",
+                    desc: "Cesium 专注于 3D 地理空间数据的可视化与流式传输。结合 Cesium ion 云平台，它更侧重于海量 3D 数据的云端处理与展示，是数字孪生底座的首选，但在传统二维矢量分析上不如前两者。"
+                }
+            },
+            challengesData: {
+                labels: ['数据质量与标注成本', '算法模型泛化能力', '算力与硬件成本', '复合型人才短缺'],
+                data: [35, 25, 20, 20],
+                details: [
+                    "高质量的地理标注数据（如语义分割掩码）获取极其昂贵且耗时。",
+                    "模型在一个城市训练好，换个地貌环境可能失效，泛化性是痛点。",
+                    "处理海量遥感影像对 GPU 算力要求极高，尤其是实时推理场景。",
+                    "既懂 GIS 空间分析又精通深度学习算法的跨界人才稀缺。"
+                ]
+            }
+        };
+
+        // --- Navigation Logic ---
+        function switchTab(tabId) {
+            // Update active state in sidebar
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.getElementById(`nav-${tabId}`).classList.add('active');
+
+            // Hide all sections with fade out effect
+            const sections = document.querySelectorAll('main > section');
+            sections.forEach(sec => {
+                sec.classList.add('hidden');
+                sec.classList.remove('opacity-100');
+                sec.classList.add('opacity-0');
+            });
+
+            // Show selected section
+            const target = document.getElementById(`view-${tabId}`);
+            target.classList.remove('hidden');
+            // Small timeout to allow display:block to apply before opacity transition
+            setTimeout(() => {
+                target.classList.remove('opacity-0');
+                target.classList.add('opacity-100');
+            }, 50);
+
+            state.currentTab = tabId;
+
+            // Trigger chart resize/update if needed when tab becomes visible
+            if(tabId === 'landscape' && radarChart) radarChart.resize();
+            if(tabId === 'market') {
+                if(oppChart) oppChart.resize();
+                if(challChart) challChart.resize();
+            }
+        }
+
+        // --- Landscape View Interaction ---
+        function updateSoftwareDetail(key) {
+            const data = state.softwareData[key];
+            const titleEl = document.getElementById('software-title');
+            const descEl = document.getElementById('software-desc');
+            
+            // Fade out
+            titleEl.style.opacity = 0;
+            descEl.style.opacity = 0;
+
+            setTimeout(() => {
+                titleEl.textContent = data.title;
+                descEl.textContent = data.desc;
+                // Fade in
+                titleEl.style.opacity = 1;
+                descEl.style.opacity = 1;
+            }, 200);
+        }
+
+        // --- Evolution View Interaction ---
+        function highlightTimeline(stage) {
+            // Reset all
+            document.querySelectorAll('.timeline-node').forEach(el => {
+                el.classList.remove('bg-teal-500', 'scale-125');
+                el.classList.add('bg-gray-300'); // default
+                if(el.id === 'node-2') el.classList.replace('bg-gray-300', 'bg-teal-500'); // Keep color identity
+                if(el.id === 'node-3') el.classList.replace('bg-gray-300', 'bg-blue-600'); 
+            });
+
+            // This is a simple visual feedback, real logic is just scrolling or focus
+            // For this interaction, we just ensure the clicked one pops
+            const node = document.getElementById(`node-${stage}`);
+            // node.classList.add('scale-125');
+        }
+
+        // --- Strategy View Interaction ---
+        function toggleStrategy(id) {
+            const content = document.getElementById(`strategy-content-${id}`);
+            const icon = document.getElementById(`icon-${id}`);
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // --- Chart Initialization ---
+        let radarChart, oppChart, challChart;
+
+        window.onload = function() {
+            initRadarChart();
+            initMarketCharts();
+        };
+
+        function initRadarChart() {
+            const ctx = document.getElementById('softwareRadarChart').getContext('2d');
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['AI 集成度', '易用性', '可视化能力', '开源/成本', '生态丰富度', '云端能力'],
+                    datasets: [{
+                        label: 'ArcGIS',
+                        data: [9, 8, 8, 2, 9, 7],
+                        fill: true,
+                        backgroundColor: 'rgba(37, 99, 235, 0.2)', // Blue
+                        borderColor: 'rgb(37, 99, 235)',
+                        pointBackgroundColor: 'rgb(37, 99, 235)',
+                    }, {
+                        label: 'QGIS',
+                        data: [6, 5, 6, 10, 8, 4],
+                        fill: true,
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)', // Green
+                        borderColor: 'rgb(16, 185, 129)',
+                        pointBackgroundColor: 'rgb(16, 185, 129)',
+                    }, {
+                        label: 'Cesium',
+                        data: [5, 6, 10, 7, 6, 9],
+                        fill: true,
+                        backgroundColor: 'rgba(249, 115, 22, 0.2)', // Orange
+                        borderColor: 'rgb(249, 115, 22)',
+                        pointBackgroundColor: 'rgb(249, 115, 22)',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: '#e5e7eb' },
+                            grid: { color: '#e5e7eb' },
+                            pointLabels: {
+                                font: { size: 12, family: "'Noto Sans SC', sans-serif" },
+                                color: '#4b5563'
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 10
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        function initMarketCharts() {
+            // Opportunities Bar Chart
+            const ctxOpp = document.getElementById('opportunitiesChart').getContext('2d');
+            oppChart = new Chart(ctxOpp, {
+                type: 'bar',
+                data: {
+                    labels: ['智慧城市', '自然资源', '自动驾驶', '商业分析', '灾害应急'],
+                    datasets: [{
+                        label: '预估市场增长潜力 (CAGR %)',
+                        data: [28, 22, 35, 18, 25],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(249, 115, 22, 0.7)',
+                            'rgba(139, 92, 246, 0.7)',
+                            'rgba(239, 68, 68, 0.7)'
+                        ],
+                        borderWidth: 0,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false } },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y + '% 年均复合增长率';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Challenges Doughnut Chart
+            const ctxChall = document.getElementById('challengesChart').getContext('2d');
+            challChart = new Chart(ctxChall, {
+                type: 'doughnut',
+                data: {
+                    labels: state.challengesData.labels,
+                    datasets: [{
+                        data: state.challengesData.data,
+                        backgroundColor: [
+                            '#ef4444', // Red
+                            '#f59e0b', // Amber
+                            '#3b82f6', // Blue
+                            '#6366f1'  // Indigo
+                        ],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.parsed + '%';
+                                }
+                            }
+                        }
+                    },
+                    onClick: (e, activeElements) => {
+                        if (activeElements.length > 0) {
+                            const index = activeElements[0].index;
+                            const text = state.challengesData.details[index];
+                            const label = state.challengesData.labels[index];
+                            document.getElementById('challenge-detail-text').innerHTML = `
+                                <div class="bg-gray-50 p-3 rounded border-l-4 border-red-400 text-left">
+                                    <strong>${label}:</strong>
+                                    <p class="text-sm text-gray-600 mt-1">${text}</p>
+                                </div>
+                            `;
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
