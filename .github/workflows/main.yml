@@ -9,13 +9,18 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # 添加以下权限声明，显式允许 Action 机器人提交内容
+    # 显式允许 Action 机器人提交内容
     permissions:
       contents: write
       
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          # 取消“脱离头指针”状态，确保我们在分支上操作
+          ref: ${{ github.head_ref }}
+          # 获取所有历史记录，有助于处理同步
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -30,3 +35,5 @@ jobs:
         with:
           commit_message: "Auto-generate data.json index"
           file_pattern: 'data.json'
+          # 如果遇到冲突，强制推送 (在小型个人项目中这是最简单有效的办法)
+          push_options: '--force'
