@@ -3,161 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HTML 文件查看器</title>
-    <!-- 引入 Tailwind CSS 以实现快速响应式布局 -->
+    <title>GitHub Pages 文件浏览器</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 自定义样式，用于实现更美观的滚动条和布局 */
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            /* 在移动端，body本身不需要flex，以便侧边栏可以浮动 */
-            overflow: hidden;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-            background-color: #f3f4f6;
-        }
-        .file-list-item.active {
-            background-color: #3b82f6;
-            color: white;
-        }
-        .file-list-item.active svg {
-            color: white;
-        }
-        /* Webkit 浏览器滚动条样式 */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #c7c7c7;
-            border-radius: 6px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #a3a3a3;
-        }
-        /* 全屏模式样式 */
-        main.fullscreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 50;
-        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .sidebar-item { transition: all 0.2s ease; }
+        #content-frame { border: none; width: 100%; height: 100%; background: white; }
     </style>
 </head>
-<body class="relative md:flex h-screen">
+<body class="bg-slate-50 text-slate-900 h-screen flex flex-col overflow-hidden">
 
-    <!-- 遮罩层，用于在移动端打开菜单时覆盖主内容区 -->
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
+    <header class="h-14 bg-white border-b flex items-center px-6 shrink-0 z-10 shadow-sm">
+        <div class="flex items-center space-x-2">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+            </svg>
+            <h1 class="font-bold text-lg tracking-tight">文档预览系统</h1>
+        </div>
+        <div id="breadcrumb" class="ml-8 text-sm text-slate-500 font-medium">首页</div>
+    </header>
 
-    <!-- 左侧文件列表栏 -->
-    <aside id="sidebar" class="fixed top-0 left-0 w-64 max-w-xs h-full bg-white shadow-md flex flex-col z-40 transform -translate-x-full transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:w-1/4">
-        <div class="p-4 border-b">
-            <h1 class="text-xl font-bold text-gray-800">HTML 文件列表</h1>
-            <p class="text-sm text-gray-500">点击文件在右侧预览</p>
-        </div>
-        <!-- 根据截图更新的文件列表 -->
-        <nav id="file-list" class="flex-1 overflow-y-auto p-2 space-y-1">
-            <a href="#" class="file-list-item flex items-center p-3 text-gray-700 rounded-md hover:bg-gray-100 transition-colors duration-200" data-src="中美机器人研究报告.html">
-                <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                <span>中美机器人研究报告.html</span>
-            </a>
-            <a href="#" class="file-list-item flex items-center p-3 text-gray-700 rounded-md hover:bg-gray-100 transition-colors duration-200" data-src="demo.html">
-                <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                <span>demo.html</span>
-            </a>
-            <a href="#" class="file-list-item flex items-center p-3 text-gray-700 rounded-md hover:bg-gray-100 transition-colors duration-200" data-src="electromagnetic_wave_animation.html">
-                <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                <span>electromagnetic_wave_animation.html</span>
-            </a>
-        </nav>
-    </aside>
+    <main class="flex-grow flex overflow-hidden">
+        <aside class="w-72 bg-white border-r flex flex-col shrink-0">
+            <div class="p-4 border-b bg-slate-50/50 flex justify-between items-center">
+                <h2 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">目录</h2>
+                <button onclick="fetchFileSystem()" class="text-blue-500 hover:text-blue-700 text-xs">同步</button>
+            </div>
+            <nav id="dir-list" class="flex-1 overflow-y-auto p-2 space-y-1">
+                <div class="p-4 text-center text-slate-400 text-sm italic">正在读取索引...</div>
+            </nav>
 
-    <!-- 右侧 Webview 显示区域 -->
-    <main id="main-content" class="flex-1 h-full flex flex-col bg-gray-100 transition-all duration-300">
-        <div class="p-4 border-b bg-white flex items-center justify-between shadow-sm">
-             <!-- 移动端菜单按钮 (汉堡菜单) -->
-             <button id="menu-toggle-btn" class="md:hidden p-2 rounded-md hover:bg-gray-200 focus:outline-none" title="打开菜单">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            <div id="file-section" class="h-1/2 border-t flex flex-col hidden">
+                <div class="p-4 border-b bg-slate-50/50 flex justify-between items-center">
+                    <h2 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">HTML 文件</h2>
+                    <button onclick="closeFiles()" class="text-slate-400 hover:text-slate-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <nav id="file-list" class="flex-1 overflow-y-auto p-2 space-y-1"></nav>
+            </div>
+        </aside>
+
+        <section class="flex-1 flex flex-col bg-slate-100 relative">
+            <div id="loading-overlay" class="absolute inset-0 bg-white/50 z-20 hidden items-center justify-center font-medium">加载中...</div>
+            <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center">
+                <svg class="w-20 h-20 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
-             </button>
-             <p id="webview-header" class="text-gray-700 font-semibold truncate ml-2">请从左侧选择一个文件进行预览</p>
-             <button id="fullscreen-btn" class="p-2 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ml-auto" title="切换全屏">
-                <svg id="icon-enter-fullscreen" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1v4m0 0h-4m4 0l-5-5M4 16v4m0 0h4m-4 0l5-5m11 1v-4m0 0h-4m4 0l-5 5" />
-                </svg>
-                <svg id="icon-exit-fullscreen" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l-5 5m0 0V15m0 4h4m1-9l5-5m0 0h-4m4 0v4m-1 9l5 5m0 0v-4m0 4h-4m1-9l-5-5m0 0v4m0-4h4" />
-                </svg>
-             </button>
-        </div>
-        <div class="flex-1 p-4">
-            <iframe id="webview" class="w-full h-full bg-white rounded-lg shadow-inner border border-gray-200"></iframe>
-        </div>
+                <p class="text-lg">请选择左侧目录中的 HTML 文件</p>
+            </div>
+            <iframe id="content-frame" class="hidden"></iframe>
+        </section>
     </main>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            const menuToggleBtn = document.getElementById('menu-toggle-btn');
-            const fileListItems = document.querySelectorAll('.file-list-item');
-            const webview = document.getElementById('webview');
-            const webviewHeader = document.getElementById('webview-header');
-            const fullscreenBtn = document.getElementById('fullscreen-btn');
-            const mainContent = document.getElementById('main-content');
-            const iconEnter = document.getElementById('icon-enter-fullscreen');
-            const iconExit = document.getElementById('icon-exit-fullscreen');
+        const DATA_URL = "./data.json"; // GitHub Action 生成的索引文件
 
-            const toggleSidebar = () => {
-                sidebar.classList.toggle('-translate-x-full');
-                overlay.classList.toggle('hidden');
-            };
+        const dirListEl = document.getElementById('dir-list');
+        const fileListEl = document.getElementById('file-list');
+        const fileSection = document.getElementById('file-section');
+        const contentFrame = document.getElementById('content-frame');
+        const emptyState = document.getElementById('empty-state');
+        const breadcrumb = document.getElementById('breadcrumb');
+        const loadingOverlay = document.getElementById('loading-overlay');
 
-            // 移动端菜单按钮事件
-            menuToggleBtn.addEventListener('click', toggleSidebar);
-            // 遮罩层点击事件
-            overlay.addEventListener('click', toggleSidebar);
+        let fileDataCache = {};
+        let currentDir = "";
 
-            fileListItems.forEach(item => {
-                item.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    
-                    const fileName = item.dataset.src;
-                    webview.src = fileName;
-                    webviewHeader.textContent = `正在预览: ${fileName}`;
-
-                    fileListItems.forEach(el => el.classList.remove('active'));
-                    item.classList.add('active');
-
-                    // 如果侧边栏是打开的 (在移动端), 则关闭它
-                    if (window.innerWidth < 768 && !sidebar.classList.contains('-translate-x-full')) {
-                        toggleSidebar();
-                    }
-                });
-            });
-            
-            // 为全屏按钮添加点击事件
-            fullscreenBtn.addEventListener('click', () => {
-                mainContent.classList.toggle('fullscreen');
-                iconEnter.classList.toggle('hidden');
-                iconExit.classList.toggle('hidden');
-            });
-
-            // 默认加载第一个文件
-            if (fileListItems.length > 0) {
-                fileListItems[0].click();
-            } else {
-                webviewHeader.textContent = '没有可预览的文件';
-                webview.src = 'about:blank'; // 清空 iframe
+        async function fetchFileSystem() {
+            try {
+                // 清除缓存并显示加载
+                dirListEl.innerHTML = '<div class="p-4 text-center text-slate-400 text-sm italic">加载中...</div>';
+                
+                const response = await fetch(DATA_URL + '?t=' + Date.now()); // 防止缓存
+                if (!response.ok) throw new Error('未找到索引文件');
+                
+                fileDataCache = await response.json();
+                renderDirectories();
+            } catch (error) {
+                dirListEl.innerHTML = `
+                    <div class="p-4 text-center text-red-400 text-xs">
+                        读取 data.json 失败<br>请检查 GitHub Action 是否已运行
+                    </div>`;
             }
-        });
+        }
+
+        function renderDirectories() {
+            dirListEl.innerHTML = "";
+            Object.keys(fileDataCache).forEach(dirName => {
+                const btn = document.createElement('button');
+                btn.className = "sidebar-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-700 group cursor-pointer";
+                btn.innerHTML = `<svg class="w-5 h-5 text-slate-400 group-hover:text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg><span>${dirName}</span>`;
+                btn.onclick = () => selectDirectory(dirName, btn);
+                dirListEl.appendChild(btn);
+            });
+        }
+
+        function selectDirectory(dirName, element) {
+            currentDir = dirName;
+            document.querySelectorAll('#dir-list button').forEach(el => el.classList.remove('bg-blue-50', 'text-blue-700'));
+            element.classList.add('bg-blue-50', 'text-blue-700');
+            breadcrumb.textContent = `首页 / ${dirName}`;
+            
+            fileSection.classList.remove('hidden');
+            fileListEl.innerHTML = "";
+            
+            fileDataCache[dirName].forEach(fileName => {
+                const btn = document.createElement('button');
+                btn.className = "sidebar-item w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm text-slate-600 hover:bg-slate-100 group cursor-pointer text-left";
+                btn.innerHTML = `<svg class="w-4 h-4 text-slate-400 group-hover:text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg><span class="truncate">${fileName}</span>`;
+                btn.onclick = () => loadFile(fileName, btn);
+                fileListEl.appendChild(btn);
+            });
+        }
+
+        function loadFile(fileName, element) {
+            document.querySelectorAll('#file-list button').forEach(el => el.classList.remove('bg-slate-200', 'text-slate-900', 'font-semibold'));
+            element.classList.add('bg-slate-200', 'text-slate-900', 'font-semibold');
+            
+            breadcrumb.textContent = `首页 / ${currentDir} / ${fileName}`;
+            emptyState.classList.add('hidden');
+            contentFrame.classList.remove('hidden');
+
+            // GitHub Pages 上文件的真实路径：./目录名/文件名
+            contentFrame.src = `./${currentDir}/${fileName}`;
+        }
+
+        function closeFiles() {
+            fileSection.classList.add('hidden');
+            breadcrumb.textContent = `首页`;
+            contentFrame.classList.add('hidden');
+            emptyState.classList.remove('hidden');
+        }
+
+        window.onload = fetchFileSystem;
     </script>
 </body>
 </html>
-
